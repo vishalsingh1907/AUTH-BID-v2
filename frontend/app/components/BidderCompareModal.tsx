@@ -205,7 +205,6 @@ export default function BidderCompareModal({
                   <tr className="hover:bg-slate-50/50">
                     <td className="p-3 font-bold text-slate-700 bg-slate-50/50">Collusion Indicator</td>
                     {comparedResults.map((r) => {
-                      const collusionScore = r.risk_score?.components?.collusion_indicators || 0;
                       const isRing1 = ["B001", "B003", "B007"].includes(r.bidder_id);
                       const isRing2 = ["B005", "B009"].includes(r.bidder_id);
 
@@ -250,8 +249,8 @@ export default function BidderCompareModal({
                   <tr className="hover:bg-slate-50/50">
                     <td className="p-3 font-bold text-slate-700 bg-slate-50/50">GST Compliance</td>
                     {comparedResults.map((r) => {
-                      const gstCheck = r.compliance_checks?.find((c: any) => c.category === "GST");
-                      const gaps = r.compliance_checks?.find((c: any) => c.check_name === "GST Filing Compliance");
+                      const gstCheck = r.compliance_checks?.find((c) => c.category === "GST");
+                      const gaps = r.compliance_checks?.find((c) => c.check_name === "GST Filing Compliance");
                       const hasGaps = gaps?.result === "warning" || gaps?.result === "fail";
 
                       return (

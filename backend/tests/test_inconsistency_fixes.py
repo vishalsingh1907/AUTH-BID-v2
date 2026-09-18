@@ -69,7 +69,6 @@ def test_graph_cluster_indicators_ring2_and_ring1():
     graph = _build_cross_bidder_graph(bidders)
 
     assert len(graph["clusters"]) == 2
-    clusters_by_id = {c["cluster_id"]: c for c in graph["clusters"]}
 
     # Ring 2 check: members B005 and B009
     ring2 = next((c for c in graph["clusters"] if "B005" in c["members"] and "B009" in c["members"]), None)

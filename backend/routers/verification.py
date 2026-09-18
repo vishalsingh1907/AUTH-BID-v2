@@ -2,7 +2,7 @@
 SIH26100 — Verification Router
 Triggers the agentic verification pipeline and returns results.
 """
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends
 from models.database import (
     store_verification_result,
     get_all_results_for_tender,
