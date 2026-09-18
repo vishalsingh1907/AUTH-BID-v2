@@ -685,7 +685,7 @@ def get_all_bidders() -> list[dict]:
     return SYNTHETIC_BIDDERS
 
 
-def get_tender() -> dict:
+def get_tender(tender_id: str | None = None) -> dict:
     return SAMPLE_TENDER
 
 

@@ -88,6 +88,43 @@ def _build_bidder_graph(bidder: dict) -> dict:
                 "relationship": "HAS_IDENTIFIER",
             })
 
+    # Phone nodes
+    for d in bidder.get("directors", []):
+        phone = d.get("phone")
+        if phone:
+            phone_id = f"phone-{phone}"
+            if not any(n["id"] == phone_id for n in nodes):
+                nodes.append({
+                    "id": phone_id,
+                    "label": f"Phone: {phone}",
+                    "type": "phone",
+                    "properties": {"phone": phone},
+                })
+                edges.append({
+                    "source": bidder_node_id,
+                    "target": phone_id,
+                    "relationship": "USES_PHONE",
+                })
+
+    # Email nodes
+    for d in bidder.get("directors", []):
+        email = d.get("email")
+        if email:
+            email = email.lower().strip()
+            email_id = f"email-{email}"
+            if not any(n["id"] == email_id for n in nodes):
+                nodes.append({
+                    "id": email_id,
+                    "label": f"Email: {email}",
+                    "type": "email",
+                    "properties": {"email": email},
+                })
+                edges.append({
+                    "source": bidder_node_id,
+                    "target": email_id,
+                    "relationship": "USES_EMAIL",
+                })
+
     return {"nodes": nodes, "edges": edges}
 
 
@@ -105,6 +142,7 @@ def _build_cross_bidder_graph(bidders: list[dict]) -> dict:
     address_to_bidders: dict[str, list[str]] = {}
     bank_to_bidders: dict[str, list[str]] = {}
     phone_to_bidders: dict[str, list[str]] = {}
+    email_to_bidders: dict[str, list[str]] = {}
 
     for bidder in bidders:
         bid_id = bidder["bidder_id"]
@@ -195,10 +233,46 @@ def _build_cross_bidder_graph(bidders: list[dict]) -> dict:
 
         # Track phone numbers
         for d in bidder.get("directors", []):
-            if d.get("phone"):
-                if d["phone"] not in phone_to_bidders:
-                    phone_to_bidders[d["phone"]] = []
-                phone_to_bidders[d["phone"]].append(bid_id)
+            phone = d.get("phone")
+            if phone:
+                phone_id = f"phone-{phone}"
+                if phone not in phone_to_bidders:
+                    phone_to_bidders[phone] = []
+                    nodes.append({
+                        "id": phone_id,
+                        "label": f"Phone: {phone}",
+                        "type": "phone",
+                        "properties": {"phone": phone},
+                    })
+                phone_to_bidders[phone].append(bid_id)
+                edges.append({
+                    "source": f"bidder-{bid_id}",
+                    "target": phone_id,
+                    "relationship": "USES_PHONE",
+                    "is_suspicious": False,
+                })
+
+        # Track emails
+        for d in bidder.get("directors", []):
+            email = d.get("email")
+            if email:
+                email = email.lower().strip()
+                email_id = f"email-{email}"
+                if email not in email_to_bidders:
+                    email_to_bidders[email] = []
+                    nodes.append({
+                        "id": email_id,
+                        "label": f"Email: {email}",
+                        "type": "email",
+                        "properties": {"email": email},
+                    })
+                email_to_bidders[email].append(bid_id)
+                edges.append({
+                    "source": f"bidder-{bid_id}",
+                    "target": email_id,
+                    "relationship": "USES_EMAIL",
+                    "is_suspicious": False,
+                })
 
     # Mark suspicious edges (shared entities between bidders)
     for key, bids in director_to_bidders.items():
@@ -220,8 +294,20 @@ def _build_cross_bidder_graph(bidders: list[dict]) -> dict:
                 if edge["target"] == f"bank-{key}":
                     edge["is_suspicious"] = True
 
+    for phone, bids in phone_to_bidders.items():
+        if len(bids) > 1:
+            for edge in edges:
+                if edge["target"] == f"phone-{phone}":
+                    edge["is_suspicious"] = True
+
+    for email, bids in email_to_bidders.items():
+        if len(bids) > 1:
+            for edge in edges:
+                if edge["target"] == f"email-{email}":
+                    edge["is_suspicious"] = True
+
     # Build collusion clusters
-    # Simple connected-component analysis
+    # Connected-component analysis across all shared attributes
     bidder_links: dict[str, set[str]] = {b["bidder_id"]: set() for b in bidders}
     for key, bids in director_to_bidders.items():
         if len(bids) > 1:
@@ -237,7 +323,21 @@ def _build_cross_bidder_graph(bidders: list[dict]) -> dict:
                     if b1 != b2:
                         bidder_links[b1].add(b2)
 
+    for key, bids in bank_to_bidders.items():
+        if len(bids) > 1:
+            for b1 in bids:
+                for b2 in bids:
+                    if b1 != b2:
+                        bidder_links[b1].add(b2)
+
     for phone, bids in phone_to_bidders.items():
+        if len(bids) > 1:
+            for b1 in bids:
+                for b2 in bids:
+                    if b1 != b2:
+                        bidder_links[b1].add(b2)
+
+    for email, bids in email_to_bidders.items():
         if len(bids) > 1:
             for b1 in bids:
                 for b2 in bids:
@@ -273,6 +373,15 @@ def _build_cross_bidder_graph(bidders: list[dict]) -> dict:
                 for key, bids in address_to_bidders.items():
                     if len(set(bids) & cluster_members) > 1:
                         shared_indicators.append("Shared registered address")
+                for key, bids in bank_to_bidders.items():
+                    if len(set(bids) & cluster_members) > 1:
+                        shared_indicators.append(f"Shared bank branch (IFSC: {key})")
+                for phone, bids in phone_to_bidders.items():
+                    if len(set(bids) & cluster_members) > 1:
+                        shared_indicators.append(f"Shared phone number ({phone})")
+                for email, bids in email_to_bidders.items():
+                    if len(set(bids) & cluster_members) > 1:
+                        shared_indicators.append(f"Shared email address ({email})")
 
                 clusters.append({
                     "cluster_id": f"CLU-{cluster_id:03d}",

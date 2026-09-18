@@ -100,7 +100,7 @@ Instead of procurement committees spending days manually examining certificates,
 
 ---
 
-### 2. 🕸️ Interactive Collusion & Knowledge Graph (`/graph`)
+### 2. 🕸️ Interactive Collusion & Knowledge Graph (Dashboard Graph Tab)
 Cartels and shell companies frequently submit artificial "cover bids" to simulate competition. AuthBid uncovers these syndicates using an interactive 2D Force-Directed Graph:
 * **Entity Resolution**:
   * **Shared Directors / DINs**: Connects distinct bidder companies that share board members or authorized signatories.
@@ -118,11 +118,11 @@ Cartels and shell companies frequently submit artificial "cover bids" to simulat
 ### 3. 📊 Commercial Price & Spectrum Analysis
 * **L1 Anomaly & Outlier Detection**: Identifies abnormally low tenders (bids heavily undercut to win awards but likely to result in contract abandonment or sub-par quality).
 * **Price Clustering Detection**: Visualizes bid quotes across a distribution curve to identify unnaturally tight pricing spreads characteristic of collusive price fixing.
-* **Budget Benchmark Comparison**: Evaluates quotes against government estimated tender sanction values (e.g., ₹1.50 Cr).
+* **Budget Benchmark Comparison**: Evaluates quotes against government estimated tender sanction values (e.g., ₹2.50 Cr).
 
 ---
 
-### 4. 🔒 Tamper-Evident Cryptographic Audit Trail (`/audit`)
+### 4. 🔒 Tamper-Evident Cryptographic Audit Trail (Dashboard Audit Tab)
 * **SHA-256 Hash-Chained Blockchain-Style Ledger**:
   * Every pipeline action logs:
     $$\text{current\_hash} = \text{SHA-256}(\text{prev\_hash} \parallel \text{agent\_id} \parallel \text{action} \parallel \text{input\_hash} \parallel \text{output\_hash})$$
@@ -158,7 +158,7 @@ Cartels and shell companies frequently submit artificial "cover bids" to simulat
 ---
 
 ### 7. 💬 AI Procurement Copilot
-* Conversational AI sidecar powered by Gemini (with reliable rule-based fallback).
+* Conversational AI sidecar powered by Gemini 2.5 Flash via `langchain-google-genai` (with reliable rule-based deterministic fallback when `GEMINI_API_KEY` is not set).
 * Allows procurement officers to query bid data in plain English:
   * *"Why was Bidder B001 marked as critical risk?"*
   * *"Show all bidders exempted under the MSE category."*
@@ -179,33 +179,35 @@ Cartels and shell companies frequently submit artificial "cover bids" to simulat
 
 **Tender Reference:** `GEM/2026/B/4521897`  
 **Description:** Supply of 500 Desktop Computers with 3-Year On-Site Warranty  
-**Estimated Value:** ₹1,50,00,000 (₹1.50 Crore)  
-**Dataset:** 12 Synthetic Bidders with pre-planted realistic anomalies:
+**Estimated Value:** ₹2,50,00,000 (₹2.50 Crore / 25,000,000 INR)  
+**Dataset:** 12 Synthetic Bidders (canonical data defined in `backend/mock_apis/synthetic_data.py`) with pre-planted realistic anomalies:
 
 | Bidder ID | Entity Name | Bid Amount | Placed Finding / Anomaly | Risk Level |
 | :--- | :--- | :---: | :--- | :---: |
-| **B001** | Apex Infotech Solutions | ₹1,42,50,000 | **Collusion Ring 1**: Shared directors & address with B003 & B007 | 🔴 Critical |
-| **B002** | Bharat Digital Systems | ₹1,48,90,000 | Clean bidder; valid MSME, GST, and MCA records | 🟢 Low |
-| **B003** | Zenith Computech Ltd | ₹1,46,20,000 | **Collusion Ring 1**: Shared directors with B001 & B007 | 🔴 Critical |
-| **B004** | Precision IT Hardware | ₹1,51,00,000 | Expired MSME certificate; failed turnover threshold | 🟡 Medium |
-| **B005** | Delta Edge Technologies | ₹1,39,80,000 | **Collusion Ring 2**: Shared bank account & phone with B009 | 🔴 High |
-| **B006** | CyberNet Infraworks | ₹1,44,00,000 | Entity name on PAN mismatches GST legal name | 🟡 Medium |
-| **B007** | NexGen Systems Pvt Ltd | ₹1,49,50,000 | **Collusion Ring 1**: Shell company (<3 mos old, no GST history) | 🔴 Critical |
-| **B008** | Prime Technologies | ₹1,53,00,000 | Historical debarment record on GeM incident database | 🟡 Medium |
-| **B009** | Alpha Byte Enterprises | ₹1,41,20,000 | **Collusion Ring 2**: Shared bank account & signatory with B005 | 🔴 High |
-| **B010** | Trishul Computing Corp | ₹1,47,00,000 | Clean bidder; compliant BIS and ISO 9001 certifications | 🟢 Low |
-| **B011** | Vayu Tech Solutions | ₹1,43,00,000 | Non-compliance in GST (2 unfiled GSTR-3B quarters) | 🟡 Medium |
-| **B012** | Shaurya Electronics | ₹1,45,50,000 | Clean bidder; fully verified domestic manufacturer (MII 65%) | 🟢 Low |
+| **B001** | TechVision Solutions Pvt. Ltd. | ₹2,35,00,000 | **Collusion Ring 1**: Shared directors (DIN: 09876543, 08765432) & address with B003 & B007 | 🔴 Critical |
+| **B002** | Reliable Computing Systems Ltd. | ₹2,42,00,000 | Clean bidder; valid MSME, GST, and MCA records; compliant BIS & ISO 9001:2015 | 🟢 Low |
+| **B003** | DigiCore Infosystems Pvt. Ltd. | ₹2,48,00,000 | **Collusion Ring 1**: Shared directors with B001 & B007 | 🔴 Critical |
+| **B004** | GreenTech Peripherals | ₹2,28,00,000 | Expired MSME registration (expired 2025-12-31); under scrutiny for MSE relaxation | 🟡 Medium |
+| **B005** | NexGen IT Solutions Pvt. Ltd. | ₹2,39,00,000 | **Collusion Ring 2**: Shared bank branch (PNB, IFSC: PUNB0123400) & director phone with B009 | 🔴 High |
+| **B006** | Bharat Electronics & Computing | ₹2,45,00,000 | PAN registered name typo mismatches GST legal entity name | 🟡 Medium |
+| **B007** | Quantum Digital Services Pvt. Ltd. | ₹2,20,00,000 | **Collusion Ring 1**: Shell company (<90 days old, zero GST history) submitting cover bid | 🔴 Critical |
+| **B008** | MegaByte Computers Pvt. Ltd. | ₹2,40,00,000 | Historical debarment record on MoD/GeM incident database (status cleared) | 🟡 Medium |
+| **B009** | CloudFirst Technologies Pvt. Ltd. | ₹2,32,00,000 | **Collusion Ring 2**: Shared bank branch (PNB, IFSC: PUNB0123400) & contact phone with B005 | 🔴 High |
+| **B010** | Pinnacle Systems India Pvt. Ltd. | ₹2,48,00,000 | Clean bidder; fully compliant ISO 9001:2015, ISO 27001, BIS certified | 🟢 Low |
+| **B011** | ByteWave Electronics Pvt. Ltd. | ₹2,30,00,000 | Non-compliance in GST (2 unfiled GSTR-3B return periods) | 🟡 Medium |
+| **B012** | Atlas Infosys Solutions Pvt. Ltd. | ₹2,46,00,000 | Clean bidder; fully verified domestic manufacturer (MII 68%) | 🟢 Low |
 
 ---
 
 ## 💻 Tech Stack
 
-| Layer | Technologies Used |
-| :--- | :--- |
-| **Frontend** | Next.js 16 (App Router, Turbopack), React 19, TypeScript, TailwindCSS, Lucide-React, Recharts, React-Force-Graph-2D |
-| **Backend** | FastAPI (Python 3.12), Pydantic v2, Uvicorn, Python-Multipart |
-| **Database & Cache** | PostgreSQL (AsyncPG/SQLAlchemy), Neo4j Graph DB, Redis (with in-memory fallback for local demo) |
-| **AI / NLP** | Google Gemini API (`gemini-2.5-flash`), LangChain, LangGraph |
-| **Security & Integrity** | SHA-256 Hash Chaining, Cryptographic Verification, CORS, Python-Jose |
-| **Deployment** | Docker & Docker Compose |
+| Layer | Technologies Used | Notes |
+| :--- | :--- | :--- |
+| **Frontend** | Next.js 16 (App Router, Turbopack), React 19, TypeScript, TailwindCSS v4, Lucide-React, Recharts, React-Force-Graph-2D | Dashboard tabs (`dashboard`, `bidders`, `graph`, `checklist`, `audit`, `report`) within single-page app (`app/page.tsx`). No Next Auth, Zod, or Server Actions used. |
+| **Authentication & RBAC** | Header-based (`X-User-Role: officer \| committee_member \| admin`) | Lightweight header-based simulation for local demo & instant officer role-switching; production OAuth2/SSO integration documented in roadmap. |
+| **Backend** | FastAPI (Python 3.12), Pydantic v2, Uvicorn, Python-Multipart | RESTful API endpoints under `/api/` |
+| **Database & Cache** | PostgreSQL (AsyncPG/SQLAlchemy), Neo4j Graph DB, Redis | In-memory fallback stores with canonical synthetic data for zero-dependency standalone hackathon demo |
+| **AI / NLP** | Google Gemini API (`gemini-2.5-flash`), LangChain (`langchain-google-genai`) | Live LLM queries when `GEMINI_API_KEY` is configured; automatic fallback to deterministic vigilance logic |
+| **Security & Integrity** | SHA-256 Hash Chaining, RFC 3161 Merkle Anchoring, CORS, Python-Jose | Immutable audit trail with live tamper simulation and verification |
+| **Deployment** | Docker & Docker Compose | Multi-container setup (`docker-compose.yml`, `docker-compose.prod.yml`) |
+

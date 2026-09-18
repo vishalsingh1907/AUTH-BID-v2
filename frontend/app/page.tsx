@@ -483,8 +483,12 @@ export default function DashboardPage() {
         <div>
           {/* Logo / Brand Header */}
           <div className="p-5 border-b border-slate-100 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 to-blue-500 flex items-center justify-center text-white shadow-sm flex-shrink-0">
-              <Shield size={22} className="stroke-[2.2]" />
+            <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center p-1.5 shadow-xs flex-shrink-0">
+              <img
+                src="/assets/logo-icon-inverted.png"
+                alt="AuthBid Logo"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
@@ -731,7 +735,7 @@ export default function DashboardPage() {
                             Vigilance Alert: 2 Cross-Bidder Collusion Rings & 1 Shell Company Detected
                           </h4>
                           <p className="text-xs text-red-700 mt-0.5 leading-relaxed">
-                            OSINT analysis resolved common directors (DIN: 01234567, 02345678) between Apex Infotech, Quantum Tech, and InnoVision (Ring 1), along with shared banking credentials between Nexus & Horizon (Ring 2).
+                            OSINT analysis resolved common directors (DIN: 09876543, 08765432) between TechVision Solutions, DigiCore Infosystems, and Quantum Digital Services (Ring 1), along with shared banking credentials between NexGen IT Solutions & CloudFirst Technologies (Ring 2).
                           </p>
                         </div>
                       </div>
@@ -1450,7 +1454,7 @@ export default function DashboardPage() {
                           icon={Network}
                           label="Total Entities"
                           value={graphData.analysis_summary.total_nodes}
-                          sublabel="Bidders, Directors, Addresses, Banks"
+                          sublabel="Bidders, Directors, Addresses, Banks, Phones, Emails"
                           color="#1d4ed8"
                           bgColor="#eff6ff"
                           borderColor="#bfdbfe"
@@ -1563,6 +1567,14 @@ export default function DashboardPage() {
                           <div className="flex items-center gap-2">
                             <span className="w-3 h-3 rounded-full bg-amber-500" />
                             <span>Bank Branch (IFSC)</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-orange-600" />
+                            <span>Phone Number</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="w-3 h-3 rounded-full bg-cyan-600" />
+                            <span>Email Address</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="w-4 h-0.5 bg-red-500 border-b border-dashed border-red-500" />
@@ -1862,8 +1874,12 @@ export default function DashboardPage() {
                   <div className="gov-card p-10 bg-white border border-slate-300 shadow-md print:shadow-none print:border-none">
                     {/* Official Letterhead */}
                     <div className="text-center pb-6 border-b-2 border-slate-800">
-                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-900 text-white mb-2">
-                        <Shield size={24} />
+                      <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-900 text-white mb-2 p-2 shadow-xs">
+                        <img
+                          src="/assets/logo-icon-inverted.png"
+                          alt="AuthBid Seal"
+                          className="w-full h-full object-contain"
+                        />
                       </div>
                       <h2 className="text-xl font-black text-slate-900 tracking-wide uppercase">
                         Government e-Marketplace (GeM)
@@ -1951,7 +1967,7 @@ export default function DashboardPage() {
                             • Collusion Ring 1 (Bid-Rigging Syndicate):
                           </p>
                           <p className="text-red-800 mt-0.5">
-                            Apex Infotech (B001), Quantum Tech (B003), and InnoVision (B007) share common directors (DIN: 01234567, 02345678) and common registered address. InnoVision is a 90-day shell entity with zero tax filing history.
+                            TechVision Solutions (B001), DigiCore Infosystems (B003), and Quantum Digital Services (B007) share common directors (DIN: 09876543, 08765432) and common registered address. Quantum Digital Services is a 90-day shell entity with zero tax filing history.
                           </p>
                         </div>
                         <div className="p-3 bg-red-50 border border-red-200 rounded text-xs">
@@ -1959,7 +1975,7 @@ export default function DashboardPage() {
                             • Collusion Ring 2 (Common Financial Beneficiary):
                           </p>
                           <p className="text-red-800 mt-0.5">
-                            Nexus Solutions (B005) and Horizon Electronics (B009) share identical bank account branches and authorized signatory phone contact.
+                            NexGen IT Solutions (B005) and CloudFirst Technologies (B009) share identical bank account branches and authorized signatory phone contact.
                           </p>
                         </div>
                       </div>
@@ -2081,6 +2097,8 @@ function EnterpriseGraphCanvas({
       address: "#059669",
       bank: "#d97706",
       identifier: "#7c3aed",
+      phone: "#ea580c",
+      email: "#0891b2",
     };
 
     // Filter nodes if cluster selected

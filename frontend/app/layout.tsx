@@ -12,6 +12,13 @@ export const metadata: Metadata = {
   description:
     "AI-Powered Integrated Bid Compliance Verification Platform for GeM Procurement. OSINT-style entity resolution, cross-bidder collusion detection, and hash-chained audit trails.",
   keywords: ["GeM", "Bid Verification", "Compliance", "AI", "Government Procurement", "SIH"],
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/assets/logo-icon.png", type: "image/png" },
+    ],
+    apple: "/assets/logo-icon.png",
+  },
 };
 
 export default function RootLayout({

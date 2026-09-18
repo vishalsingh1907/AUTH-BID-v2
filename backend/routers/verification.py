@@ -24,6 +24,7 @@ from datetime import datetime
 import hashlib
 import json
 import re
+import os
 
 router = APIRouter(prefix="/api/verification", tags=["Verification"])
 
@@ -697,6 +698,82 @@ async def get_scrutiny_report(tender_id: str):
     }
 
 
+def _query_gemini_copilot(raw_query: str, query: str, tender_id: str, bidder_id: str | None, untrusted_context: str) -> dict | None:
+    """
+    Attempts to answer copilot query via Google Gemini LLM using langchain-google-genai.
+    Returns structured dictionary matching Copilot response contract, or None on failure/absence of key.
+    """
+    api_key = settings.GEMINI_API_KEY or os.environ.get("GEMINI_API_KEY", "")
+    if not api_key or not api_key.strip() or api_key.strip() in ["your_gemini_api_key_here", ""]:
+        return None
+
+    try:
+        from langchain_google_genai import ChatGoogleGenerativeAI
+        from langchain_core.messages import SystemMessage, HumanMessage
+
+        llm = ChatGoogleGenerativeAI(
+            model=settings.LLM_MODEL or "gemini-2.5-flash",
+            google_api_key=api_key.strip(),
+            temperature=0.2,
+        )
+
+        system_instruction = (
+            "You are the GeM Vigilance & Legal AI Copilot for Indian Government e-Marketplace procurement. "
+            "You scrutinize tender GEM/2026/B/4521897 ('Supply of 500 Desktop Computers with 3-Year Warranty', "
+            "Estimated Value: ₹2.50 Cr / 25,000,000 INR).\n"
+            "Forensic Ground Truth:\n"
+            "- Collusion Ring 1 (Bid Rigging Cartel): TechVision Solutions (B001, bid ₹2.35 Cr), DigiCore Infosystems (B003, bid ₹2.48 Cr), "
+            "and Quantum Digital Services (B007, bid ₹2.20 Cr). They share directors Rajesh Kumar Sharma (DIN: 09876543) and Vikram Singh Chauhan (DIN: 08765432), "
+            "and common registered address at Plot No. 45, Sector 18, Industrial Area Phase II, Gurugram. B007 is an incorporated shell company (<90 days, no GST filings).\n"
+            "- Collusion Ring 2 (Related Party Nexus): NexGen IT Solutions (B005, bid ₹2.39 Cr) and CloudFirst Technologies (B009, bid ₹2.32 Cr). "
+            "They share bank branch at Punjab National Bank (IFSC: PUNB0123400, Nehru Place, New Delhi) and contact phone number (9098765432).\n"
+            "- Other Anomalies: GreenTech Peripherals (B004, expired MSME Udyam, bid ₹2.28 Cr), Bharat Electronics & Computing (B006, PAN name typo, bid ₹2.45 Cr), "
+            "MegaByte Computers (B008, historical cleared debarment, bid ₹2.40 Cr), ByteWave Electronics (B011, 2 GST filing gaps, bid ₹2.30 Cr).\n"
+            "- Clean Compliant Bidders: Reliable Computing Systems (B002, bid ₹2.42 Cr), Pinnacle Systems India (B010, bid ₹2.48 Cr), Atlas Infosys Solutions (B012, bid ₹2.46 Cr).\n"
+            "- Legal Frameworks: Competition Act 2002 Section 3(3), GFR 2017 Rule 151, 173, 175, GeM GTC Clause 4.14.\n\n"
+            "You MUST respond ONLY with a single valid JSON object with EXACTLY these keys:\n"
+            "{\n"
+            '  "title": "<Concise descriptive title>",\n'
+            '  "summary": "<High-level executive summary of findings>",\n'
+            '  "evidence": ["<Evidence point 1>", "<Evidence point 2>", ...],\n'
+            '  "legal_statute": "<Relevant Indian legal statutes / rules cited>",\n'
+            '  "recommendation": "<Actionable legal / vigilance recommendation for procurement officer>"\n'
+            "}\n"
+            "Do NOT wrap in markdown code blocks. Return strictly valid JSON."
+        )
+
+        user_content = f"User Query: {raw_query}\nTarget Tender: {tender_id}"
+        if untrusted_context:
+            user_content += f"\nBidder Context (Sanitized):\n{untrusted_context}"
+
+        response = llm.invoke([SystemMessage(content=system_instruction), HumanMessage(content=user_content)])
+        content = response.content.strip()
+        if content.startswith("```json"):
+            content = content[7:]
+        elif content.startswith("```"):
+            content = content[3:]
+        if content.endswith("```"):
+            content = content[:-3]
+        content = content.strip()
+
+        parsed = json.loads(content)
+        if isinstance(parsed, dict) and "title" in parsed and "summary" in parsed and "evidence" in parsed:
+            evidence_list = [str(e) for e in parsed["evidence"]] if isinstance(parsed["evidence"], list) else [str(parsed["evidence"])]
+            return {
+                "title": str(parsed["title"]),
+                "summary": str(parsed["summary"]),
+                "evidence": evidence_list,
+                "legal_statute": str(parsed.get("legal_statute", "General Financial Rules (GFR) 2017 & Competition Act 2002.")),
+                "recommendation": str(parsed.get("recommendation", "Review dossiers before proceeding.")),
+                "disclaimer": "AI-generated analysis (Gemini 2.5 Flash) — verify independently against statutory records before making legal determinations.",
+                "context_applied": untrusted_context,
+            }
+    except Exception:
+        # Fallback cleanly on LLM error or parse failure
+        return None
+    return None
+
+
 @router.post("/copilot")
 async def copilot_query(payload: dict):
     """
@@ -704,6 +781,7 @@ async def copilot_query(payload: dict):
     Answers technical, legal, and anti-collusion questions regarding the tender,
     specific bidders, and statutory provisions (Competition Act 2002, GFR 2017).
     Applies strict prompt-injection sanitization to isolate untrusted bidder inputs.
+    Powered by Gemini 2.5 Flash with deterministic rule-based fallback.
     """
     raw_query = payload.get("query", "")
     query = _sanitize_bidder_input(raw_query).lower()
@@ -722,17 +800,25 @@ async def copilot_query(payload: dict):
                 f'</untrusted_bidder_context>'
             )
 
-    # Smart response generation based on procurement intelligence
+    # 1. Attempt live LLM response via Google Gemini
+    live_response = _query_gemini_copilot(raw_query, query, tender_id, bidder_id, untrusted_context)
+    if live_response:
+        return {
+            "success": True,
+            "data": live_response,
+        }
+
+    # 2. Deterministic rule-based fallback based on canonical procurement intelligence
     if "ring 1" in query or ("collusion" in query and ("techvision" in query or "b001" in query or "b003" in query or "b007" in query)):
         return {
             "success": True,
             "data": {
                 "title": "Analysis of Collusion Ring 1 (Bid Rigging Cartel)",
-                "summary": "Forensic graph analysis resolved an active bid-rigging syndicate operating across three entities: TechVision Solutions (B001), DigiCore Infosystems (B003), and Quantum Digital (B007).",
+                "summary": "Forensic graph analysis resolved an active bid-rigging syndicate operating across three entities: TechVision Solutions (B001), DigiCore Infosystems (B003), and Quantum Digital Services (B007).",
                 "evidence": [
-                    "Shared Directors: Rajesh Sharma (DIN: 01234567) and Amit Verma (DIN: 02345678) hold board seats simultaneously across B001, B003, and B007.",
-                    "Common Physical Address: All three entities list Plot 42, Okhla Industrial Area Phase III, New Delhi as their registered office.",
-                    "Shell Entity Planting: Quantum Digital (B007) was incorporated merely 90 days ago with zero prior GST filing history, created to submit an artificial cover bid to satisfy the three-bidder minimum threshold.",
+                    "Shared Directors: Rajesh Kumar Sharma (DIN: 09876543) and Vikram Singh Chauhan (DIN: 08765432) hold board seats simultaneously across B001, B003, and B007.",
+                    "Common Physical Address: All three entities list Plot No. 45, Sector 18, Industrial Area Phase II, Gurugram, Haryana as their registered office.",
+                    "Shell Entity Planting: Quantum Digital Services (B007) was incorporated merely 90 days ago with zero prior GST filing history, created to submit an artificial cover bid to satisfy the three-bidder minimum threshold.",
                     "Price Coordination: Bids are clustered tightly (₹2.20 Cr, ₹2.35 Cr, ₹2.48 Cr) around the ₹2.50 Cr estimate to manipulate L1 determination."
                 ],
                 "legal_statute": "Section 3(3)(d) of the Competition Act, 2002 (Bid Rigging or Collusive Bidding) & Rule 175 of General Financial Rules (GFR) 2017.",
@@ -748,9 +834,9 @@ async def copilot_query(payload: dict):
                 "title": "Analysis of Collusion Ring 2 (Related Party Bidding)",
                 "summary": "NexGen IT Solutions (B005) and CloudFirst Technologies (B009) have submitted competitive bids while sharing operational and financial infrastructure.",
                 "evidence": [
-                    "Shared Banking: Both entities route tender transactions through HDFC Bank branch (IFSC: HDFC0001234) with identical account prefix series.",
-                    "Common Contact: The authorized signatory mobile number for NexGen IT matches the direct phone contact of CloudFirst's primary director.",
-                    "Cover Bidding Pattern: Bid amounts (₹2.39 Cr vs ₹2.32 Cr) are structured to protect CloudFirst while maintaining an illusion of market competition."
+                    "Shared Banking: Both entities route tender transactions through Punjab National Bank branch (IFSC: PUNB0123400) with identical account prefix series.",
+                    "Common Contact: The authorized signatory mobile number for NexGen IT Solutions matches the direct phone contact of CloudFirst Technologies' primary director (9098765432).",
+                    "Cover Bidding Pattern: Bid amounts (₹2.39 Cr vs ₹2.32 Cr) are structured to protect CloudFirst Technologies while maintaining an illusion of market competition."
                 ],
                 "legal_statute": "GeM General Terms & Conditions Clause 4.14 (Prohibition of Related Party Bidding) & Section 3(3)(c) Competition Act 2002.",
                 "recommendation": "Issue Show-Cause notice seeking justification within 48 hours. If common control is confirmed, reject both bids and debar from future MeitY tenders.",
@@ -765,7 +851,7 @@ async def copilot_query(payload: dict):
                 "title": "L1 Commercial Evaluation & Recommendation",
                 "summary": "After filtering out disqualified collusion rings and non-compliant entities, genuine price discovery indicates compliant L1 standing.",
                 "evidence": [
-                    "Lowest Bidder Overall: Quantum Digital (₹2.20 Cr) — DISQUALIFIED (Shell entity in Collusion Ring 1).",
+                    "Lowest Bidder Overall: Quantum Digital Services (₹2.20 Cr) — DISQUALIFIED (Shell entity in Collusion Ring 1).",
                     "Second Lowest: GreenTech Peripherals (₹2.28 Cr) — UNDER SCRUTINY (Expired MSME certificate requiring 48-hr clarification).",
                     "Lowest Fully Compliant Bidder: ByteWave Electronics (B011, ₹2.30 Cr) has minor GST gaps. If disqualified, Reliable Computing Systems (B002, ₹2.42 Cr) represents the cleanest compliant L1."
                 ],
@@ -780,12 +866,12 @@ async def copilot_query(payload: dict):
             "success": True,
             "data": {
                 "title": "Forensic Entity Report: Quantum Digital Services Pvt. Ltd. (B007)",
-                "summary": "Quantum Digital exhibits 4 classic indicators of a synthetic front/shell company.",
+                "summary": "Quantum Digital Services exhibits 4 classic indicators of a synthetic front/shell company.",
                 "evidence": [
                     "Age of Incorporation: Incorporated June 2026 (less than 90 days operational), failing the 3-year tender experience requirement.",
                     "GST Compliance: Zero GSTR-3B filings recorded in the central tax portal.",
                     "Turnover Inadequacy: Submitted un-audited provisional figures with invalid ICAI UDIN.",
-                    "Director Nexus: Directorial overlap with B001 (TechVision) and B003 (DigiCore)."
+                    "Director Nexus: Directorial overlap with B001 (TechVision Solutions) and B003 (DigiCore Infosystems)."
                 ],
                 "legal_statute": "Prevention of Money Laundering Act (PMLA) Section 66 & GeM Seller Debarment Policy Section 3.",
                 "recommendation": "Immediate summary rejection and freeze on GeM seller account.",
@@ -832,11 +918,11 @@ async def generate_show_cause_notice(
     charges = []
     if is_ring1:
         charges.append("Violations under Section 3(3)(a) and 3(3)(d) of Competition Act 2002 (Bid Rigging and Cartelization).")
-        charges.append("Concealment of common directorships (DIN: 01234567, 02345678) across participating competing entities.")
+        charges.append("Concealment of common directorships (DIN: 09876543, 08765432) across participating competing entities.")
         charges.append("Submission of non-genuine cover bids to circumvent the GeM three-bidder competition requirement.")
     elif is_ring2:
         charges.append("Violation of GeM GTC Clause 4.14 — Anti-Competitive Practice through Related Party Bidding.")
-        charges.append("Operation of competing tender entities utilizing shared financial banking channels (IFSC: HDFC0001234).")
+        charges.append("Operation of competing tender entities utilizing shared financial banking channels (IFSC: PUNB0123400).")
     elif bidder_id == "B004":
         charges.append("Claiming MSE exemption using an expired MSME Udyam registration (expired 2025-12-31).")
     else:

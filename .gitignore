@@ -48,3 +48,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Archives & Temporary Presentation files
+*.zip
+*.pptx
