@@ -2046,7 +2046,8 @@ export default function DashboardPage() {
         allBidders={bidders}
         allResults={results}
         onViewDossier={(r) => {
-          selectBidderForDossier(r);
+          const found = results.find((item) => item.bidder_id === r.bidder_id);
+          if (found) selectBidderForDossier(found);
           setIsCompareOpen(false);
         }}
       />
