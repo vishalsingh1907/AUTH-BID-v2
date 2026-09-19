@@ -20,6 +20,7 @@ from models.database import (
 from mock_apis.synthetic_data import get_bidder_by_id, get_all_bidders, get_tender as get_sample_tender, check_blacklist
 from models.auth import UserRole, require_roles
 from config import settings
+from routers.graph import _build_cross_bidder_graph
 from datetime import datetime
 import difflib
 import hashlib
@@ -337,7 +338,7 @@ def _detect_anomalies(bidder: dict, all_bidders: list[dict]) -> list[dict]:
     return anomalies
 
 
-def _calculate_risk_score(checks: list[dict], anomalies: list[dict], bidder: dict) -> dict:
+def _calculate_risk_score(checks: list[dict], anomalies: list[dict], bidder: dict, cluster_floor: float = 0.0) -> dict:
     """Calculate composite risk score 0-100."""
     # Component scores (higher = more risk)
     failed_checks = sum(1 for c in checks if c["result"] == "fail")
@@ -345,7 +346,7 @@ def _calculate_risk_score(checks: list[dict], anomalies: list[dict], bidder: dic
     total_checks = max(len(checks), 1)
 
     # Cross-source consistency (30%)
-    consistency_risk = ((failed_checks * 100 + warning_checks * 60) / total_checks) * 0.3
+    consistency_risk = ((failed_checks * 100 + warning_checks * 40) / total_checks) * 0.3
 
     # Collusion indicators (25%)
     collusion_anomalies = [a for a in anomalies if a["anomaly_type"] in ["director_overlap", "address_overlap", "bank_overlap", "phone_overlap"]]
@@ -373,25 +374,17 @@ def _calculate_risk_score(checks: list[dict], anomalies: list[dict], bidder: dic
         if c["result"] == "fail":
             bl_risk = 100
         elif c["result"] == "warning":
-            bl_risk = 80
+            bl_risk = 50
     bl_risk *= 0.10
 
     overall = consistency_risk + collusion_risk + financial_risk + doc_risk + bl_risk
     overall = min(round(overall, 1), 100)
 
-    # Collusion-cluster risk floor: bidders involved in suspicious clusters
-    # must not be scored below High/Critical regardless of other vectors
-    if len(collusion_anomalies) >= 3:
-        overall = max(overall, 70)   # Critical floor for heavy collusion
-    elif len(collusion_anomalies) >= 1:
-        overall = max(overall, 45)   # High floor for any collusion signal
-
-    # Anomaly / warning risk floor: bidders with any detected anomaly or
-    # warning/failed compliance check should not be classified as "low" risk
-    has_warnings_or_fails = any(c["result"] in ("fail", "warning") for c in checks)
-    has_anomalies = len(anomalies) > 0
-    if (has_warnings_or_fails or has_anomalies) and overall < 20:
-        overall = 20  # Medium floor
+    # Suspicious-cluster risk floor: bidders identified in a detected collusion cluster
+    # receive a risk floor (e.g. 45.0 for High risk, 70.0 for Critical)
+    effective_floor = cluster_floor or bidder.get("cluster_risk_floor", 0.0)
+    if effective_floor > 0:
+        overall = max(overall, effective_floor)
 
     if overall >= 70:
         level = "critical"
@@ -454,6 +447,14 @@ async def run_verification(tender_id: str):
         raise HTTPException(status_code=404, detail=f"Tender {tender_id} not found")
 
     all_bidders = get_all_bidders()
+    graph = _build_cross_bidder_graph(all_bidders)
+    cluster_floors = {}
+    for cluster in graph.get("clusters", []):
+        members = cluster.get("members", [])
+        floor = 70.0 if len(members) >= 3 else 45.0
+        for m in members:
+            cluster_floors[m] = max(cluster_floors.get(m, 0.0), floor)
+
     results = []
 
     for bidder in all_bidders:
@@ -473,8 +474,13 @@ async def run_verification(tender_id: str):
         anomalies = _detect_anomalies(bidder, all_bidders)
         append_audit_entry("anomaly_detector", "ANOMALY_DETECTION", {"bidder_id": bidder["bidder_id"]}, {"anomalies": len(anomalies)})
 
-        # Calculate risk score
-        risk_score = _calculate_risk_score(checks, anomalies, bidder)
+        # Calculate risk score (with suspicious-cluster floor applied)
+        risk_score = _calculate_risk_score(
+            checks,
+            anomalies,
+            bidder,
+            cluster_floor=cluster_floors.get(bidder["bidder_id"], 0.0),
+        )
         append_audit_entry("risk_scorer", "RISK_SCORING", {"bidder_id": bidder["bidder_id"]}, {"score": risk_score["overall_score"]})
 
         # Build hard eligibility summary
@@ -706,11 +712,11 @@ async def get_scrutiny_report(tender_id: str):
     trail = get_audit_trail()
     chain_valid = verify_audit_chain()
 
-    # Only truly clean bidders: low risk AND no failed checks AND no anomalies
+    # Only truly clean bidders: low risk AND no failed/warning checks AND no anomalies
     clean_bidders = [
         r for r in results
         if r.get("risk_score", {}).get("risk_level") == "low"
-        and not any(c["result"] == "fail" for c in r.get("compliance_checks", []))
+        and not any(c["result"] in ("fail", "warning") for c in r.get("compliance_checks", []))
         and len(r.get("anomalies", [])) == 0
     ]
     flagged_bidders = [r for r in results if r.get("risk_score", {}).get("risk_level") in ["high", "critical"]]

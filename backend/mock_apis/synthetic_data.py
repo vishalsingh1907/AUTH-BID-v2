@@ -33,7 +33,7 @@ random.seed(42)  # Reproducible demo data
 # ═══════════════════════════════════════════════════════════════
 def _generate_gst_filings(start_year: int, start_month: int, gaps: list[str] | None = None, monthly_turnover_base: int | None = None) -> list[dict]:
     """Generate monthly GST filing history from start date to Aug 2026.
-    
+
     Args:
         monthly_turnover_base: Expected monthly turnover. If provided, taxable_value
             is generated as base * random(0.85, 1.15) for realistic cross-check.

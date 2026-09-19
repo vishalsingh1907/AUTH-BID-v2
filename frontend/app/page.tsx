@@ -1911,51 +1911,62 @@ export default function DashboardPage() {
                       <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide mb-2">
                         1. Executive Summary & Verification Finding
                       </h3>
-                      <p className="text-xs text-slate-700 leading-relaxed mb-4">
-                        The Technical Scrutiny Sub-Committee has completed an AI-assisted multi-agent compliance review of all 12 submitted bids. Based on automated cross-referencing with MCA21, GSTN, CBDT PAN, MSME Udyam, and the Central Debarment database, <strong>{lowRiskCount} bidders</strong> are found fully compliant and recommended for financial opening. <strong>{highRiskCount} bidders</strong> are flagged with critical anti-trust/collusion anomalies and are recommended for immediate rejection and vigilance referral.
-                      </p>
+                      {(() => {
+                        const cleanBidders = results.filter(
+                          (r) =>
+                            r.risk_score?.risk_level === "low" &&
+                            !r.compliance_checks?.some((c) => c.result === "fail" || c.result === "warning") &&
+                            (!r.anomalies || r.anomalies.length === 0)
+                        );
+                        const obsCount = totalCount - cleanBidders.length - highRiskCount;
+                        return (
+                          <>
+                            <p className="text-xs text-slate-700 leading-relaxed mb-4">
+                              The Technical Scrutiny Sub-Committee has completed an AI-assisted multi-agent compliance review of all 12 submitted bids. Based on automated cross-referencing with MCA21, GSTN, CBDT PAN, MSME Udyam, and the Central Debarment database, <strong>{cleanBidders.length} bidders</strong> are found fully compliant and recommended for financial opening. <strong>{highRiskCount} bidders</strong> are flagged with critical anti-trust/collusion anomalies and are recommended for immediate rejection and vigilance referral.
+                            </p>
 
-                      {/* Summary Table */}
-                      <table className="w-full border border-slate-300 text-xs mb-6">
-                        <thead className="bg-slate-100 font-bold text-slate-800">
-                          <tr>
-                            <th className="border border-slate-300 p-2 text-left">Category</th>
-                            <th className="border border-slate-300 p-2 text-center">Count</th>
-                            <th className="border border-slate-300 p-2 text-left">Recommendation</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td className="border border-slate-300 p-2 font-semibold">Technically & Commercially Compliant</td>
-                            <td className="border border-slate-300 p-2 text-center font-bold text-emerald-700">{lowRiskCount}</td>
-                            <td className="border border-slate-300 p-2 text-emerald-700 font-semibold">Advance to Commercial Stage (L1 Evaluation)</td>
-                          </tr>
-                          <tr>
-                            <td className="border border-slate-300 p-2 font-semibold">Minor Observations (Under Clarification)</td>
-                            <td className="border border-slate-300 p-2 text-center font-bold text-amber-700">{medRiskCount}</td>
-                            <td className="border border-slate-300 p-2 text-amber-700 font-semibold">Seek 48-Hour Technical Clarification</td>
-                          </tr>
-                          <tr>
-                            <td className="border border-slate-300 p-2 font-semibold text-red-700">Disqualified (Collusion / Shell / Default)</td>
-                            <td className="border border-slate-300 p-2 text-center font-bold text-red-700">{highRiskCount}</td>
-                            <td className="border border-slate-300 p-2 text-red-700 font-semibold">Disqualify & Issue Show-Cause Notice</td>
-                          </tr>
-                        </tbody>
-                      </table>
+                            {/* Summary Table */}
+                            <table className="w-full border border-slate-300 text-xs mb-6">
+                              <thead className="bg-slate-100 font-bold text-slate-800">
+                                <tr>
+                                  <th className="border border-slate-300 p-2 text-left">Category</th>
+                                  <th className="border border-slate-300 p-2 text-center">Count</th>
+                                  <th className="border border-slate-300 p-2 text-left">Recommendation</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                <tr>
+                                  <td className="border border-slate-300 p-2 font-semibold">Technically & Commercially Compliant</td>
+                                  <td className="border border-slate-300 p-2 text-center font-bold text-emerald-700">{cleanBidders.length}</td>
+                                  <td className="border border-slate-300 p-2 text-emerald-700 font-semibold">Advance to Commercial Stage (L1 Evaluation)</td>
+                                </tr>
+                                <tr>
+                                  <td className="border border-slate-300 p-2 font-semibold">Minor Observations (Under Clarification)</td>
+                                  <td className="border border-slate-300 p-2 text-center font-bold text-amber-700">{obsCount > 0 ? obsCount : medRiskCount}</td>
+                                  <td className="border border-slate-300 p-2 text-amber-700 font-semibold">Seek 48-Hour Technical Clarification</td>
+                                </tr>
+                                <tr>
+                                  <td className="border border-slate-300 p-2 font-semibold text-red-700">Disqualified (Collusion / Shell / Default)</td>
+                                  <td className="border border-slate-300 p-2 text-center font-bold text-red-700">{highRiskCount}</td>
+                                  <td className="border border-slate-300 p-2 text-red-700 font-semibold">Disqualify & Issue Show-Cause Notice</td>
+                                </tr>
+                              </tbody>
+                            </table>
 
-                      {/* Qualified Bidders List */}
-                      <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide mb-2">
-                        2. Bidders Qualified for Financial Bid Opening
-                      </h3>
-                      <ul className="list-disc pl-5 text-xs text-slate-700 space-y-1 mb-6">
-                        {results
-                          .filter((r) => r.risk_score?.risk_level === "low")
-                          .map((r) => (
-                            <li key={r.bidder_id}>
-                              <strong>{r.entity_name}</strong> (Bidder ID: {r.bidder_id}) — Risk Score: {r.risk_score?.overall_score?.toFixed(1)}/100 (Passes all 11 criteria)
-                            </li>
-                          ))}
-                      </ul>
+                            {/* Qualified Bidders List */}
+                            <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide mb-2">
+                              2. Bidders Qualified for Financial Bid Opening
+                            </h3>
+                            <ul className="list-disc pl-5 text-xs text-slate-700 space-y-1 mb-6">
+                              {cleanBidders.map((r) => (
+                                <li key={r.bidder_id}>
+                                  <strong>{r.entity_name}</strong> (Bidder ID: {r.bidder_id}) — Risk Score: {r.risk_score?.overall_score?.toFixed(1)}/100 (Passes all criteria with zero anomalies or warnings)
+                                </li>
+                              ))}
+                            </ul>
+                          </>
+                        );
+                      })()}
 
                       {/* Disqualified Entities & Reasons */}
                       <h3 className="text-sm font-black text-slate-900 uppercase tracking-wide mb-2">

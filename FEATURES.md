@@ -187,14 +187,14 @@ Cartels and shell companies frequently submit artificial "cover bids" to simulat
 | **B001** | TechVision Solutions Pvt. Ltd. | ₹2,35,00,000 | **Collusion Ring 1**: Shared directors (DIN: 09876543, 08765432) & address with B003 & B007 | 🔴 Critical |
 | **B002** | Reliable Computing Systems Ltd. | ₹2,42,00,000 | Clean bidder; valid MSME, GST, and MCA records; compliant BIS & ISO 9001:2015 | 🟢 Low |
 | **B003** | DigiCore Infosystems Pvt. Ltd. | ₹2,48,00,000 | **Collusion Ring 1**: Shared directors with B001 & B007 | 🔴 Critical |
-| **B004** | GreenTech Peripherals | ₹2,28,00,000 | Expired MSME registration (expired 2025-12-31); under scrutiny for MSE relaxation | 🟡 Medium |
+| **B004** | GreenTech Peripherals | ₹2,28,00,000 | Expired MSME registration (expired 2025-12-31); under observation for MSE relaxation | 🟢 Low |
 | **B005** | NexGen IT Solutions Pvt. Ltd. | ₹2,39,00,000 | **Collusion Ring 2**: Shared bank branch (PNB, IFSC: PUNB0123400) & director phone with B009 | 🔴 High |
 | **B006** | Bharat Electronics & Computing | ₹2,45,00,000 | PAN registered name typo (97% fuzzy match — passes 85% threshold) | 🟢 Low |
 | **B007** | Quantum Digital Services Pvt. Ltd. | ₹2,20,00,000 | **Collusion Ring 1**: Shell company (<90 days old, zero GST history) submitting cover bid | 🔴 Critical |
-| **B008** | MegaByte Computers Pvt. Ltd. | ₹2,40,00,000 | Historical debarment record on MoD/GeM incident database (status cleared) | 🟡 Medium |
+| **B008** | MegaByte Computers Pvt. Ltd. | ₹2,40,00,000 | Historical debarment record on MoD/GeM incident database (status cleared; under observation) | 🟢 Low |
 | **B009** | CloudFirst Technologies Pvt. Ltd. | ₹2,32,00,000 | **Collusion Ring 2**: Shared bank branch (PNB, IFSC: PUNB0123400) & contact phone with B005 | 🔴 High |
 | **B010** | Pinnacle Systems India Pvt. Ltd. | ₹2,48,00,000 | Clean bidder; fully compliant ISO 9001:2015, ISO 27001, BIS certified | 🟢 Low |
-| **B011** | ByteWave Electronics Pvt. Ltd. | ₹2,30,00,000 | Non-compliance in GST (2 unfiled GSTR-3B return periods) | 🟡 Medium |
+| **B011** | ByteWave Electronics Pvt. Ltd. | ₹2,30,00,000 | Non-compliance in GST (2 unfiled GSTR-3B return periods; under observation) | 🟢 Low |
 | **B012** | Atlas Infosys Solutions Pvt. Ltd. | ₹2,46,00,000 | Clean bidder; fully verified domestic manufacturer (MII 68%) | 🟢 Low |
 
 ---
