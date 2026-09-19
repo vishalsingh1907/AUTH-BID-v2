@@ -21,6 +21,7 @@ from mock_apis.synthetic_data import get_bidder_by_id, get_all_bidders, get_tend
 from models.auth import UserRole, require_roles
 from config import settings
 from datetime import datetime
+import difflib
 import hashlib
 import json
 import re
@@ -62,16 +63,18 @@ def _run_compliance_checks(bidder: dict, tender: dict) -> list[dict]:
         "evidence": [{"source": "GST_PORTAL", "value": bidder["gst_status"]}],
     })
 
-    # 2. PAN Verification
+    # 2. PAN Verification (Fuzzy matching — difflib SequenceMatcher, 85% threshold)
     pan_name = bidder.get("pan_registered_name", bidder["entity_name"])
-    name_match = pan_name == bidder["entity_name"]
+    similarity = difflib.SequenceMatcher(None, pan_name.lower(), bidder["entity_name"].lower()).ratio()
+    name_match = similarity >= 0.85
+    pan_result = "pass" if name_match else "warning"
     checks.append({
         "check_id": "CHK-002",
         "check_name": "PAN Verification",
         "category": "PAN",
-        "result": "pass" if name_match else "warning",
-        "details": f"PAN: {bidder['pan']}. Name on PAN: '{pan_name}'. Entity Name: '{bidder['entity_name']}'. Match: {name_match}",
-        "evidence": [{"source": "PAN_NSDL", "pan_name": pan_name, "entity_name": bidder["entity_name"]}],
+        "result": pan_result,
+        "details": f"PAN: {bidder['pan']}. Name on PAN: '{pan_name}'. Entity Name: '{bidder['entity_name']}'. Similarity: {similarity:.0%}. Match: {name_match}",
+        "evidence": [{"source": "PAN_NSDL", "pan_name": pan_name, "entity_name": bidder["entity_name"], "similarity": round(similarity, 4)}],
     })
 
     # 3. Turnover Check
@@ -187,6 +190,22 @@ def _run_compliance_checks(bidder: dict, tender: dict) -> list[dict]:
         "details": f"Unfiled returns in last 12 months: {len(not_filed)}. Periods: {', '.join(f['period'] for f in not_filed) or 'None'}",
         "evidence": [{"source": "GST_PORTAL", "gaps": [f["period"] for f in not_filed]}],
     })
+
+    # 12. Turnover vs GST Cross-Check (catches fabricated turnover certificates)
+    filings_12m = bidder.get("gst_filing_history", [])[-12:]
+    gst_implied_annual = sum(f.get("taxable_value", 0) for f in filings_12m)
+    latest_declared = turnovers[-1]["amount"] if turnovers else 0
+    if gst_implied_annual > 0 and latest_declared > 0:
+        ratio = latest_declared / gst_implied_annual
+        turnover_cross_ok = ratio <= 1.5  # declared should not exceed GST-implied by >50%
+        checks.append({
+            "check_id": "CHK-012",
+            "check_name": "Turnover vs GST Cross-Check",
+            "category": "Financial",
+            "result": "pass" if turnover_cross_ok else "warning",
+            "details": f"Declared: ₹{latest_declared:,.0f}. GST-implied (12m): ₹{gst_implied_annual:,.0f}. Ratio: {ratio:.2f}x. {'Consistent' if turnover_cross_ok else 'Discrepancy — possible fabrication'}",
+            "evidence": [{"source": "GST_ITR_CROSS", "declared": latest_declared, "gst_implied": gst_implied_annual, "ratio": round(ratio, 2)}],
+        })
 
     return checks
 
@@ -326,7 +345,7 @@ def _calculate_risk_score(checks: list[dict], anomalies: list[dict], bidder: dic
     total_checks = max(len(checks), 1)
 
     # Cross-source consistency (30%)
-    consistency_risk = ((failed_checks * 100 + warning_checks * 40) / total_checks) * 0.3
+    consistency_risk = ((failed_checks * 100 + warning_checks * 60) / total_checks) * 0.3
 
     # Collusion indicators (25%)
     collusion_anomalies = [a for a in anomalies if a["anomaly_type"] in ["director_overlap", "address_overlap", "bank_overlap", "phone_overlap"]]
@@ -354,11 +373,25 @@ def _calculate_risk_score(checks: list[dict], anomalies: list[dict], bidder: dic
         if c["result"] == "fail":
             bl_risk = 100
         elif c["result"] == "warning":
-            bl_risk = 50
+            bl_risk = 80
     bl_risk *= 0.10
 
     overall = consistency_risk + collusion_risk + financial_risk + doc_risk + bl_risk
     overall = min(round(overall, 1), 100)
+
+    # Collusion-cluster risk floor: bidders involved in suspicious clusters
+    # must not be scored below High/Critical regardless of other vectors
+    if len(collusion_anomalies) >= 3:
+        overall = max(overall, 70)   # Critical floor for heavy collusion
+    elif len(collusion_anomalies) >= 1:
+        overall = max(overall, 45)   # High floor for any collusion signal
+
+    # Anomaly / warning risk floor: bidders with any detected anomaly or
+    # warning/failed compliance check should not be classified as "low" risk
+    has_warnings_or_fails = any(c["result"] in ("fail", "warning") for c in checks)
+    has_anomalies = len(anomalies) > 0
+    if (has_warnings_or_fails or has_anomalies) and overall < 20:
+        overall = 20  # Medium floor
 
     if overall >= 70:
         level = "critical"
@@ -673,7 +706,13 @@ async def get_scrutiny_report(tender_id: str):
     trail = get_audit_trail()
     chain_valid = verify_audit_chain()
 
-    clean_bidders = [r for r in results if r.get("risk_score", {}).get("risk_level") == "low"]
+    # Only truly clean bidders: low risk AND no failed checks AND no anomalies
+    clean_bidders = [
+        r for r in results
+        if r.get("risk_score", {}).get("risk_level") == "low"
+        and not any(c["result"] == "fail" for c in r.get("compliance_checks", []))
+        and len(r.get("anomalies", [])) == 0
+    ]
     flagged_bidders = [r for r in results if r.get("risk_score", {}).get("risk_level") in ["high", "critical"]]
 
     return {

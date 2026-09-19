@@ -31,8 +31,14 @@ random.seed(42)  # Reproducible demo data
 # ═══════════════════════════════════════════════════════════════
 # HELPER FUNCTIONS (defined first so bidder dicts can call them)
 # ═══════════════════════════════════════════════════════════════
-def _generate_gst_filings(start_year: int, start_month: int, gaps: list[str] | None = None) -> list[dict]:
-    """Generate monthly GST filing history from start date to Aug 2026."""
+def _generate_gst_filings(start_year: int, start_month: int, gaps: list[str] | None = None, monthly_turnover_base: int | None = None) -> list[dict]:
+    """Generate monthly GST filing history from start date to Aug 2026.
+    
+    Args:
+        monthly_turnover_base: Expected monthly turnover. If provided, taxable_value
+            is generated as base * random(0.85, 1.15) for realistic cross-check.
+            If None, falls back to random 200k-800k for backward compat.
+    """
     if gaps is None:
         gaps = []
     filings = []
@@ -47,18 +53,23 @@ def _generate_gst_filings(start_year: int, start_month: int, gaps: list[str] | N
             if status == "Filed"
             else None
         )
+        if monthly_turnover_base is not None:
+            taxable = int(monthly_turnover_base * random.uniform(0.85, 1.15)) if status == "Filed" else 0
+        else:
+            taxable = random.randint(200000, 800000) if status == "Filed" else 0
         filings.append({
             "period": period,
             "return_type": "GSTR-3B",
             "status": status,
             "filing_date": filing_date,
-            "taxable_value": random.randint(200000, 800000) if status == "Filed" else 0,
+            "taxable_value": taxable,
         })
         if current.month == 12:
             current = datetime(current.year + 1, 1, 1)
         else:
             current = datetime(current.year, current.month + 1, 1)
     return filings
+
 
 
 def compute_document_hash(content: str) -> str:
@@ -173,7 +184,7 @@ def _build_bidders() -> list[dict]:
             },
             "gst_status": "Active",
             "gst_registration_date": "2018-07-01",
-            "gst_filing_history": _generate_gst_filings(2018, 7),
+            "gst_filing_history": _generate_gst_filings(2018, 7, monthly_turnover_base=5083333),
             "annual_turnover": [
                 {"fy": "2023-24", "amount": 45000000},
                 {"fy": "2024-25", "amount": 52000000},
@@ -217,7 +228,7 @@ def _build_bidders() -> list[dict]:
             "bank_account": {"bank_name": "State Bank of India", "ifsc": "SBIN0005678", "account_no": "38765432101234", "branch": "Okhla, New Delhi"},
             "gst_status": "Active",
             "gst_registration_date": "2017-07-01",
-            "gst_filing_history": _generate_gst_filings(2017, 7),
+            "gst_filing_history": _generate_gst_filings(2017, 7, monthly_turnover_base=12500000),
             "annual_turnover": [
                 {"fy": "2023-24", "amount": 120000000},
                 {"fy": "2024-25", "amount": 135000000},
@@ -262,7 +273,7 @@ def _build_bidders() -> list[dict]:
             "bank_account": {"bank_name": "ICICI Bank", "ifsc": "ICIC0001234", "account_no": "123456789012", "branch": "Gurugram Cyber City"},
             "gst_status": "Active",
             "gst_registration_date": "2019-04-01",
-            "gst_filing_history": _generate_gst_filings(2019, 4),
+            "gst_filing_history": _generate_gst_filings(2019, 4, monthly_turnover_base=4000000),
             "annual_turnover": [
                 {"fy": "2023-24", "amount": 38000000},
                 {"fy": "2024-25", "amount": 42000000},
@@ -299,7 +310,7 @@ def _build_bidders() -> list[dict]:
             "bank_account": {"bank_name": "Bank of Baroda", "ifsc": "BARB0NOIDA1", "account_no": "76543210987654", "branch": "Noida Sector 5"},
             "gst_status": "Active",
             "gst_registration_date": "2017-07-01",
-            "gst_filing_history": _generate_gst_filings(2017, 7),
+            "gst_filing_history": _generate_gst_filings(2017, 7, monthly_turnover_base=916667),
             "annual_turnover": [
                 {"fy": "2023-24", "amount": 8000000},
                 {"fy": "2024-25", "amount": 9500000},
@@ -337,7 +348,7 @@ def _build_bidders() -> list[dict]:
             "bank_account": {"bank_name": SHARED_BANK_RING2["bank_name"], "ifsc": SHARED_BANK_RING2["ifsc"], "account_no": "6789012345001", "branch": SHARED_BANK_RING2["branch"]},
             "gst_status": "Active",
             "gst_registration_date": "2018-01-01",
-            "gst_filing_history": _generate_gst_filings(2018, 1),
+            "gst_filing_history": _generate_gst_filings(2018, 1, monthly_turnover_base=3333333),
             "annual_turnover": [
                 {"fy": "2023-24", "amount": 28000000},
                 {"fy": "2024-25", "amount": 35000000},
@@ -376,7 +387,7 @@ def _build_bidders() -> list[dict]:
             "bank_account": {"bank_name": "Canara Bank", "ifsc": "CNRB0002345", "account_no": "1234567890123456", "branch": "Peenya, Bengaluru"},
             "gst_status": "Active",
             "gst_registration_date": "2017-07-01",
-            "gst_filing_history": _generate_gst_filings(2017, 7),
+            "gst_filing_history": _generate_gst_filings(2017, 7, monthly_turnover_base=5833333),
             "annual_turnover": [
                 {"fy": "2023-24", "amount": 55000000},
                 {"fy": "2024-25", "amount": 62000000},
@@ -447,7 +458,7 @@ def _build_bidders() -> list[dict]:
             "bank_account": {"bank_name": "Axis Bank", "ifsc": "UTIB0003456", "account_no": "917020012345678", "branch": "Wazirpur, New Delhi"},
             "gst_status": "Active",
             "gst_registration_date": "2017-07-01",
-            "gst_filing_history": _generate_gst_filings(2017, 7),
+            "gst_filing_history": _generate_gst_filings(2017, 7, monthly_turnover_base=7500000),
             "annual_turnover": [
                 {"fy": "2023-24", "amount": 75000000},
                 {"fy": "2024-25", "amount": 82000000},
@@ -493,7 +504,7 @@ def _build_bidders() -> list[dict]:
             "bank_account": {"bank_name": SHARED_BANK_RING2["bank_name"], "ifsc": SHARED_BANK_RING2["ifsc"], "account_no": "6789012345002", "branch": SHARED_BANK_RING2["branch"]},
             "gst_status": "Active",
             "gst_registration_date": "2020-10-01",
-            "gst_filing_history": _generate_gst_filings(2020, 10),
+            "gst_filing_history": _generate_gst_filings(2020, 10, monthly_turnover_base=2333333),
             "annual_turnover": [
                 {"fy": "2023-24", "amount": 18000000},
                 {"fy": "2024-25", "amount": 22000000},
@@ -531,7 +542,7 @@ def _build_bidders() -> list[dict]:
             "bank_account": {"bank_name": "Kotak Mahindra Bank", "ifsc": "KKBK0004567", "account_no": "4567890123456789", "branch": "Andheri East, Mumbai"},
             "gst_status": "Active",
             "gst_registration_date": "2017-07-01",
-            "gst_filing_history": _generate_gst_filings(2017, 7),
+            "gst_filing_history": _generate_gst_filings(2017, 7, monthly_turnover_base=10416667),
             "annual_turnover": [
                 {"fy": "2023-24", "amount": 95000000},
                 {"fy": "2024-25", "amount": 110000000},
@@ -568,7 +579,7 @@ def _build_bidders() -> list[dict]:
             "bank_account": {"bank_name": "Indian Bank", "ifsc": "IDIB000A123", "account_no": "789012345678", "branch": "Ambattur, Chennai"},
             "gst_status": "Active",
             "gst_registration_date": "2019-08-01",
-            "gst_filing_history": _generate_gst_filings(2019, 8, gaps=["2026-01", "2026-02"]),
+            "gst_filing_history": _generate_gst_filings(2019, 8, gaps=["2026-01", "2026-02"], monthly_turnover_base=1250000),
             "annual_turnover": [
                 {"fy": "2023-24", "amount": 22000000},
                 {"fy": "2024-25", "amount": 26000000},
@@ -606,7 +617,7 @@ def _build_bidders() -> list[dict]:
             "bank_account": {"bank_name": "Union Bank of India", "ifsc": "UBIN0567890", "account_no": "321098765432", "branch": "Madhapur, Hyderabad"},
             "gst_status": "Active",
             "gst_registration_date": "2017-07-01",
-            "gst_filing_history": _generate_gst_filings(2017, 7),
+            "gst_filing_history": _generate_gst_filings(2017, 7, monthly_turnover_base=4833333),
             "annual_turnover": [
                 {"fy": "2023-24", "amount": 42000000},
                 {"fy": "2024-25", "amount": 50000000},

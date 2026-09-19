@@ -82,12 +82,12 @@ Instead of procurement committees spending days manually examining certificates,
   * Parses tender criteria, including technical specifications, minimum annual turnover, minimum years of operational experience, and domestic local content (Make-in-India) thresholds.
 * **Agent 2: Simulated Multi-Registry Verification**
   * **GSTN (GST Portal)**: Validates active registration, jurisdiction, tax slab, and regularity of monthly GSTR-3B filings.
-  * **PAN (NSDL/UTIITSL)**: Verifies valid PAN status and performs exact match checks against the registered corporate entity name.
+  * **PAN (NSDL/UTIITSL)**: Verifies valid PAN status and performs fuzzy name matching (85% similarity threshold via `difflib.SequenceMatcher`) against the registered corporate entity name, catching typos without false-flagging.
   * **MCA21 (Ministry of Corporate Affairs)**: Validates Corporate Identification Number (CIN), active Director Identification Numbers (DINs), paid-up capital, date of incorporation, and registered office.
   * **Udyam / MSME Portal**: Validates Micro/Small/Medium Enterprise registration to determine statutory relaxations (e.g., turnover and prior experience exemptions under GFR Rule 153).
   * **Debarment & Blacklist Registry**: Scans against Central Public Procurement Portal (CPPP) and GeM incident management blacklists.
 * **Agent 3: Cross-Source Consistency & Triangulation**
-  * Cross-verifies declared financial turnovers against actual GST taxable filings and Income Tax Returns (ITR) to catch fabricated certificates.
+  * Cross-verifies declared financial turnovers against actual GST taxable filings (sum of last 12 months' GSTR-3B `taxable_value`) and Income Tax Returns (ITR) to catch fabricated turnover certificates. Flags discrepancies where declared turnover exceeds GST-implied revenue by >50%.
 * **Agent 4: Composite Risk Scoring Engine**
   * Generates an explainable 0–100 risk score based on five weighted components:
     1. **Cross-Source Consistency (30%)**
@@ -189,7 +189,7 @@ Cartels and shell companies frequently submit artificial "cover bids" to simulat
 | **B003** | DigiCore Infosystems Pvt. Ltd. | ₹2,48,00,000 | **Collusion Ring 1**: Shared directors with B001 & B007 | 🔴 Critical |
 | **B004** | GreenTech Peripherals | ₹2,28,00,000 | Expired MSME registration (expired 2025-12-31); under scrutiny for MSE relaxation | 🟡 Medium |
 | **B005** | NexGen IT Solutions Pvt. Ltd. | ₹2,39,00,000 | **Collusion Ring 2**: Shared bank branch (PNB, IFSC: PUNB0123400) & director phone with B009 | 🔴 High |
-| **B006** | Bharat Electronics & Computing | ₹2,45,00,000 | PAN registered name typo mismatches GST legal entity name | 🟡 Medium |
+| **B006** | Bharat Electronics & Computing | ₹2,45,00,000 | PAN registered name typo (97% fuzzy match — passes 85% threshold) | 🟢 Low |
 | **B007** | Quantum Digital Services Pvt. Ltd. | ₹2,20,00,000 | **Collusion Ring 1**: Shell company (<90 days old, zero GST history) submitting cover bid | 🔴 Critical |
 | **B008** | MegaByte Computers Pvt. Ltd. | ₹2,40,00,000 | Historical debarment record on MoD/GeM incident database (status cleared) | 🟡 Medium |
 | **B009** | CloudFirst Technologies Pvt. Ltd. | ₹2,32,00,000 | **Collusion Ring 2**: Shared bank branch (PNB, IFSC: PUNB0123400) & contact phone with B005 | 🔴 High |
