@@ -8,14 +8,11 @@ import {
   FileText,
   Copy,
   Check,
-  ExternalLink,
-  Search,
   CheckCircle2,
   XCircle,
   Hash,
   Eye,
-  Loader2,
-  Download
+  Loader2
 } from "lucide-react";
 import { api } from "../lib/api";
 

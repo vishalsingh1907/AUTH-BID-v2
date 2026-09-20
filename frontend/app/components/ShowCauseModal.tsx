@@ -5,12 +5,6 @@ import {
   ShieldAlert,
   X,
   Printer,
-  Calendar,
-  Building2,
-  FileText,
-  AlertTriangle,
-  Clock,
-  Download,
   Copy,
   Check,
   Loader2
@@ -105,7 +99,7 @@ CHARGES:
 ${data.charges.map((c, i) => `${i + 1}. ${c}`).join("\n")}
 
 LEGAL PROVISIONS INVOKED:
-${data.legal_clauses.map((l, i) => `• ${l}`).join("\n")}
+${data.legal_clauses.map((l) => `• ${l}`).join("\n")}
 
 You are hereby directed to show cause in writing within ${data.response_deadline_days} days why your bid should not be summarily rejected, your EMD forfeited, and your entity debarred under Rule 151 of GFR 2017.
 

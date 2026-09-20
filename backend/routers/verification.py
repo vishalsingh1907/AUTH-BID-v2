@@ -27,6 +27,7 @@ import hashlib
 import json
 import re
 import os
+import asyncio
 
 router = APIRouter(prefix="/api/verification", tags=["Verification"])
 
@@ -760,6 +761,8 @@ def _query_gemini_copilot(raw_query: str, query: str, tender_id: str, bidder_id:
             model=settings.LLM_MODEL or "gemini-2.5-flash",
             google_api_key=api_key.strip(),
             temperature=0.2,
+            request_timeout=5,
+            max_retries=1,
         )
 
         system_instruction = (
@@ -845,8 +848,13 @@ async def copilot_query(payload: dict):
                 f'</untrusted_bidder_context>'
             )
 
-    # 1. Attempt live LLM response via Google Gemini
-    live_response = _query_gemini_copilot(raw_query, query, tender_id, bidder_id, untrusted_context)
+    # 1. Attempt live LLM response via Google Gemini asynchronously with timeout
+    try:
+        live_response = await asyncio.to_thread(
+            _query_gemini_copilot, raw_query, query, tender_id, bidder_id, untrusted_context
+        )
+    except Exception:
+        live_response = None
     if live_response:
         return {
             "success": True,

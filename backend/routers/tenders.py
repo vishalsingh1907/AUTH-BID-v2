@@ -43,41 +43,6 @@ async def list_tenders():
     return {"success": True, "data": result}
 
 
-@router.get("/{tender_id:path}")
-async def get_tender_detail(tender_id: str):
-    """Get tender details with bidder list."""
-    tender = get_tender(tender_id)
-    if not tender:
-        raise HTTPException(status_code=404, detail=f"Tender {tender_id} not found")
-
-    bidders = get_all_bidders()
-    results = get_all_results_for_tender(tender_id)
-
-    bidder_summaries = []
-    for b in bidders:
-        result = next((r for r in results if r.get("bidder_id") == b["bidder_id"]), None)
-        bidder_summaries.append({
-            "bidder_id": b["bidder_id"],
-            "entity_name": b["entity_name"],
-            "trade_name": b.get("trade_name"),
-            "entity_type": b["entity_type"],
-            "bid_amount": b["bid_amount"],
-            "risk_score": result.get("risk_score", {}).get("overall_score") if result else None,
-            "risk_level": result.get("risk_score", {}).get("risk_level") if result else None,
-            "verification_status": result.get("status", "pending") if result else "pending",
-            "anomaly_count": len(result.get("anomalies", [])) if result else 0,
-        })
-
-    return {
-        "success": True,
-        "data": {
-            **tender,
-            "bidders": bidder_summaries,
-            "bidder_count": len(bidders),
-        },
-    }
-
-
 @router.get("/{tender_id:path}/checklist")
 async def get_ai_checklist(tender_id: str):
     """Get AI-generated compliance checklist from tender document."""
@@ -192,3 +157,67 @@ async def get_ai_checklist(tender_id: str):
             "generated_by": "AI — Tender Document Parser",
         },
     }
+
+
+@router.get("/{tender_id:path}/bidders")
+async def get_tender_bidders(tender_id: str):
+    """Get all bidders for a tender."""
+    tender = get_tender(tender_id)
+    if not tender:
+        raise HTTPException(status_code=404, detail=f"Tender {tender_id} not found")
+
+    bidders = get_all_bidders()
+    results = get_all_results_for_tender(tender_id)
+
+    bidder_summaries = []
+    for b in bidders:
+        result = next((r for r in results if r.get("bidder_id") == b["bidder_id"]), None)
+        bidder_summaries.append({
+            "bidder_id": b["bidder_id"],
+            "entity_name": b["entity_name"],
+            "trade_name": b.get("trade_name"),
+            "entity_type": b["entity_type"],
+            "bid_amount": b["bid_amount"],
+            "risk_score": result.get("risk_score", {}).get("overall_score") if result else None,
+            "risk_level": result.get("risk_score", {}).get("risk_level") if result else None,
+            "verification_status": result.get("status", "pending") if result else "pending",
+            "anomaly_count": len(result.get("anomalies", [])) if result else 0,
+        })
+
+    return {"success": True, "data": bidder_summaries}
+
+
+@router.get("/{tender_id:path}")
+async def get_tender_detail(tender_id: str):
+    """Get tender details with bidder list."""
+    tender = get_tender(tender_id)
+    if not tender:
+        raise HTTPException(status_code=404, detail=f"Tender {tender_id} not found")
+
+    bidders = get_all_bidders()
+    results = get_all_results_for_tender(tender_id)
+
+    bidder_summaries = []
+    for b in bidders:
+        result = next((r for r in results if r.get("bidder_id") == b["bidder_id"]), None)
+        bidder_summaries.append({
+            "bidder_id": b["bidder_id"],
+            "entity_name": b["entity_name"],
+            "trade_name": b.get("trade_name"),
+            "entity_type": b["entity_type"],
+            "bid_amount": b["bid_amount"],
+            "risk_score": result.get("risk_score", {}).get("overall_score") if result else None,
+            "risk_level": result.get("risk_score", {}).get("risk_level") if result else None,
+            "verification_status": result.get("status", "pending") if result else "pending",
+            "anomaly_count": len(result.get("anomalies", [])) if result else 0,
+        })
+
+    return {
+        "success": True,
+        "data": {
+            **tender,
+            "bidders": bidder_summaries,
+            "bidder_count": len(bidders),
+        },
+    }
+

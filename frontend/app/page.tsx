@@ -13,8 +13,6 @@ import {
   Network,
   FileText,
   Users,
-  TrendingUp,
-  Eye,
   Play,
   Loader2,
   ChevronRight,
@@ -25,21 +23,12 @@ import {
   ArrowRight,
   RefreshCw,
   Printer,
-  Download,
-  Building2,
-  Calendar,
-  Layers,
   FileCheck,
   Award,
   AlertOctagon,
   HelpCircle,
-  Clock,
   Sparkles,
-  ExternalLink,
-  ChevronDown,
-  Filter,
   Check,
-  X,
   Scale,
   Bot,
   Columns3,
@@ -281,10 +270,177 @@ function formatCurrency(amount: number): string {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   LANDING PAGE COMPONENT
+   ═══════════════════════════════════════════════════════════════ */
+function LandingPage({ onEnter }: { onEnter: () => void }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const features = [
+    {
+      icon: Shield,
+      title: "AI-Powered Verification",
+      desc: "Multi-agent pipeline cross-verifies bidder credentials against MCA, GSTN, PAN, EPFO & bank records in real-time.",
+      color: "#0f172a",
+    },
+    {
+      icon: Network,
+      title: "Collusion Detection",
+      desc: "OSINT-style entity resolution maps hidden relationships — shared directors, addresses, bank accounts & shell networks.",
+      color: "#0f172a",
+    },
+    {
+      icon: Lock,
+      title: "Tamper-Proof Audit Trail",
+      desc: "SHA-256 hash-chained evidence ledger ensures every verification step is cryptographically immutable.",
+      color: "#0f172a",
+    },
+    {
+      icon: Scale,
+      title: "GeM Compliance Engine",
+      desc: "AI extracts tender eligibility clauses and auto-checks each bidder against mandatory procurement rules.",
+      color: "#0f172a",
+    },
+  ];
+
+  return (
+    <div className="landing-root">
+      {/* Background */}
+      <div className="landing-bg" />
+
+      {/* Top Bar */}
+      <header
+        className={`landing-header ${mounted ? "landing-visible" : "landing-hidden"}`}
+        style={{ transitionDelay: "0.1s" }}
+      >
+        <div className="landing-header-inner">
+          <div className="flex items-center gap-3">
+            <div className="landing-header-logo">
+              <img
+                src="/assets/logo-icon.png"
+                alt="AUTHBID"
+                className="w-full h-full object-contain"
+              />
+            </div>
+            <span className="text-slate-900 font-black text-lg tracking-tight">AUTHBID</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="landing-badge">SMART INDIA HACKATHON 2026</span>
+            <span className="landing-badge-blue">PS: SIH26100</span>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero Section */}
+      <main className="landing-main">
+        <div
+          className={`landing-hero ${mounted ? "landing-visible" : "landing-hidden"}`}
+          style={{ transitionDelay: "0.25s" }}
+        >
+          <div className="landing-logo-glow">
+            <img
+              src="/assets/logo.png"
+              alt="AUTHBID Logo"
+              className="landing-logo-img"
+            />
+          </div>
+
+          <h1 className="landing-title">
+            <span className="landing-title-gradient">AUTHBID</span>
+          </h1>
+
+          <p className="landing-tagline">
+            AI-Powered Integrated Bid Compliance Verification
+            & Collusion Detection Platform
+          </p>
+
+          <p className="landing-subtitle">
+            An end-to-end intelligent verification system built for procurement
+            officers on the Government e-Marketplace (GeM). AUTHBID automates
+            cross-verification of bidder credentials against statutory registries,
+            detects bid-rigging and cartel formation through OSINT-style entity
+            resolution, and maintains a tamper-proof cryptographic audit trail
+            for every verification step.
+          </p>
+
+          {/* Info Row — Team & PS Details */}
+          <div
+            className={`landing-stats ${mounted ? "landing-visible" : "landing-hidden"}`}
+            style={{ transitionDelay: "0.45s" }}
+          >
+            <div className="landing-stat">
+              <div className="landing-stat-value" style={{ fontSize: "20px" }}>TEAM HYPERVISORS</div>
+              <div className="landing-stat-label">TEAM NAME</div>
+            </div>
+            <div className="landing-stat">
+              <div className="landing-stat-value" style={{ fontSize: "20px" }}>SIH26100</div>
+              <div className="landing-stat-label">PROBLEM STATEMENT</div>
+            </div>
+            <div className="landing-stat">
+              <div className="landing-stat-value" style={{ fontSize: "20px" }}>SIH 2026</div>
+              <div className="landing-stat-label">SMART INDIA HACKATHON</div>
+            </div>
+          </div>
+
+          {/* CTA Button */}
+          <button
+            onClick={onEnter}
+            className={`landing-cta ${mounted ? "landing-visible" : "landing-hidden"}`}
+            style={{ transitionDelay: "0.6s" }}
+          >
+            <Zap size={20} />
+            <span>Enter Intelligence Dashboard</span>
+            <ArrowRight size={18} className="landing-cta-arrow" />
+          </button>
+        </div>
+
+        {/* Feature Cards */}
+        <div
+          className={`landing-features ${mounted ? "landing-visible" : "landing-hidden"}`}
+          style={{ transitionDelay: "0.75s" }}
+        >
+          {features.map((f, i) => (
+            <div
+              key={i}
+              className="landing-feature-card"
+              style={{ transitionDelay: `${0.8 + i * 0.1}s` }}
+            >
+              <div
+                className="landing-feature-icon"
+              >
+                <f.icon size={22} style={{ color: f.color }} />
+              </div>
+              <h3 className="landing-feature-title">{f.title}</h3>
+              <p className="landing-feature-desc">{f.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div
+          className={`landing-footer ${mounted ? "landing-visible" : "landing-hidden"}`}
+          style={{ transitionDelay: "1.2s" }}
+        >
+          <div className="landing-footer-inner">
+            <span>SMART INDIA HACKATHON 2026</span>
+            <span className="landing-footer-dot">•</span>
+            <span>TEAM HYPERVISORS</span>
+            <span className="landing-footer-dot">•</span>
+            <span>GOVERNMENT e-MARKETPLACE (GeM)</span>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
    MAIN COMPONENT
    ═══════════════════════════════════════════════════════════════ */
 export default function DashboardPage() {
-  const [view, setView] = useState<"dashboard" | "bidders" | "graph" | "checklist" | "audit" | "report">("dashboard");
+  const [view, setView] = useState<"landing" | "dashboard" | "bidders" | "graph" | "checklist" | "audit" | "report">("landing");
   const [bidders, setBidders] = useState<BidderSummary[]>([]);
   const [results, setResults] = useState<VerificationResult[]>([]);
   const [graphData, setGraphData] = useState<GraphData | null>(null);
@@ -300,18 +456,15 @@ export default function DashboardPage() {
   const [riskFilter, setRiskFilter] = useState<string>("all");
   const [tamperLoading, setTamperLoading] = useState(false);
   const [restoreLoading, setRestoreLoading] = useState(false);
-  const [officerNotes, setOfficerNotes] = useState<Record<string, string>>({});
   const [officerDecisions, setOfficerDecisions] = useState<Record<string, "eligible" | "review" | "disqualified">>({});
   const [selectedClusterFilter, setSelectedClusterFilter] = useState<string | null>(null);
   const [filterSuspiciousOnly, setFilterSuspiciousOnly] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
   const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [isCompareOpen, setIsCompareOpen] = useState(false);
   const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>(["B001", "B002", "B003", "B007"]);
   const [isShowCauseOpen, setIsShowCauseOpen] = useState(false);
   const [showCauseBidderId, setShowCauseBidderId] = useState<string>("B001");
   const [dossierTab, setDossierTab] = useState<"overview" | "documents" | "checklist" | "anomalies">("overview");
-  const [showCommercialSpectrum, setShowCommercialSpectrum] = useState(true);
 
   const tenderId = "GEM/2026/B/4521897";
 
@@ -430,7 +583,7 @@ export default function DashboardPage() {
   const handleSimulateTamper = async () => {
     setTamperLoading(true);
     try {
-      await fetch(`${API}/api/verification/tamper`, { method: "POST" });
+      await fetch(`${API}/api/verification/tamper`, { method: "POST", headers: { "X-User-Role": "admin", "Content-Type": "application/json" }, body: JSON.stringify({}) });
       await loadAuditTrail();
     } catch (err) {
       console.error("Tamper simulation failed:", err);
@@ -443,7 +596,7 @@ export default function DashboardPage() {
   const handleRestoreChain = async () => {
     setRestoreLoading(true);
     try {
-      await fetch(`${API}/api/verification/restore`, { method: "POST" });
+      await fetch(`${API}/api/verification/restore`, { method: "POST", headers: { "X-User-Role": "admin" } });
       await loadAuditTrail();
     } catch (err) {
       console.error("Chain restore failed:", err);
@@ -472,7 +625,11 @@ export default function DashboardPage() {
   const lowRiskCount = results.filter((r) => r.risk_score?.risk_level === "low").length;
   const medRiskCount = results.filter((r) => r.risk_score?.risk_level === "medium").length;
   const highRiskCount = results.filter((r) => r.risk_score?.risk_level === "high" || r.risk_score?.risk_level === "critical").length;
-  const totalAnomalies = results.reduce((acc, r) => acc + (r.anomalies?.length || 0), 0);
+
+  /* ═══ Landing Page Gate ═══ */
+  if (view === "landing") {
+    return <LandingPage onEnter={() => setView("dashboard")} />;
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 text-slate-800">
@@ -482,7 +639,11 @@ export default function DashboardPage() {
       <aside className="w-68 bg-white border-r border-slate-200 flex flex-col justify-between flex-shrink-0 z-20">
         <div>
           {/* Logo / Brand Header */}
-          <div className="p-5 border-b border-slate-100 flex items-center gap-3">
+          <div
+            onClick={() => setView("landing")}
+            className="p-5 border-b border-slate-100 flex items-center gap-3 cursor-pointer hover:bg-slate-50/80 transition"
+            title="Return to Home / Overview"
+          >
             <div className="w-10 h-10 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center p-1.5 shadow-xs flex-shrink-0">
               <img
                 src="/assets/logo-icon-inverted.png"
@@ -1405,7 +1566,14 @@ export default function DashboardPage() {
                             >
                               <div>
                                 <div className="flex items-center justify-between mb-3">
-                                  <RiskBadge level={level} />
+                                  <div className="flex items-center gap-1.5">
+                                    <RiskBadge level={level} />
+                                    {decision && (
+                                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full capitalize ${decision === "eligible" ? "bg-emerald-100 text-emerald-800" : decision === "review" ? "bg-blue-100 text-blue-800" : "bg-red-100 text-red-800"}`}>
+                                        {decision}
+                                      </span>
+                                    )}
+                                  </div>
                                   <span className="font-mono font-bold text-slate-700 text-xs">
                                     {formatCurrency(bidderMeta?.bid_amount || 0)}
                                   </span>

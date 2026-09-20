@@ -7,11 +7,7 @@ import {
   Send,
   Sparkles,
   Scale,
-  AlertTriangle,
-  CheckCircle2,
   Shield,
-  FileText,
-  CornerDownLeft,
   Loader2
 } from "lucide-react";
 
