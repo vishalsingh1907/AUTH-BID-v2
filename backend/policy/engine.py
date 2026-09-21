@@ -463,20 +463,39 @@ class PolicyEvaluationEngine:
         )
 
         # 13. REQ-LAB-02: ESIC Registration & Statutory Compliance
+        # FIX: ESIC connector is UNAVAILABLE — do not silently return PASS for missing data.
+        # When ESIC source is unavailable, result is INDETERMINATE.
+        # When bidder declares no ESIC (below threshold), result is NOT_APPLICABLE (not PASS).
         esic_reg = bidder.get("esic_registered", False)
         esic_code = bidder.get("esic_establishment_code")
-        if esic_reg and esic_code:
+        esic_source_unavailable = connector_statuses.get("ESIC") == "UNAVAILABLE"
+        if esic_source_unavailable:
+            outcome = EvaluationOutcome.INDETERMINATE
+            details = "ESIC verification source is UNAVAILABLE. Cannot confirm compliance — officer review required."
+            follow_up = "Manually verify ESIC registration via ESIC portal."
+            esic_source_status = "unavailable"
+        elif esic_reg and esic_code:
             outcome = EvaluationOutcome.PASS
             details = f"ESIC establishment registration verified (Code: {esic_code})."
             follow_up = None
+            esic_source_status = "verified"
         elif esic_reg:
             outcome = EvaluationOutcome.WARNING
             details = "ESIC registration declared but establishment code missing."
             follow_up = "Request formal ESIC certificate."
+            esic_source_status = "verified"
         else:
-            outcome = EvaluationOutcome.PASS
-            details = "ESIC registration exempt (staff count below statutory threshold of 10/20 employees)."
-            follow_up = None
+            # NOT_APPLICABLE: bidder has not declared ESIC registration.
+            # This is NOT a compliance pass — it means we have no evidence.
+            # The officer should confirm whether the entity's headcount requires ESIC.
+            outcome = EvaluationOutcome.NOT_APPLICABLE
+            details = (
+                "ESIC registration not declared. This is acceptable only if the entity "
+                "employs fewer than 10 workers (factories) or 20 (other establishments). "
+                "Officer should verify employee count to confirm applicability."
+            )
+            follow_up = "Confirm employee headcount to determine ESIC obligation."
+            esic_source_status = "not_applicable"
 
         results.append(
             EvaluationResult(
@@ -487,33 +506,66 @@ class PolicyEvaluationEngine:
                 outcome=outcome,
                 severity=RequirementSeverity.TECHNICAL,
                 details=details,
-                evidence=[{"registered": esic_reg, "code": esic_code}],
+                evidence=[{"registered": esic_reg, "code": esic_code, "source_mode": "SYNTHETIC_DEMO"}],
                 evidence_ids=[f"EVID-ESIC-{bidder.get('bidder_id')}"],
-                source_status="verified",
+                source_status=esic_source_status,
                 rule_version=self.policy_version,
                 suggested_officer_follow_up=follow_up,
             )
         )
 
         # 14. REQ-STR-01: Startup India (DPIIT) & NSIC Exemption Status
+        # FIX: Was hardcoded to PASS regardless of actual registration status.
+        # UNAVAILABLE connector → INDETERMINATE; standard bidder → NOT_APPLICABLE.
         startup_reg = bidder.get("startup_india_registered", False)
         dipp_no = bidder.get("dipp_recognition_no")
         nsic_reg = bidder.get("nsic_registered", False)
-        details = f"Startup India (DPIIT): {dipp_no or 'Standard Enterprise'}. NSIC: {'Enrolled' if nsic_reg else 'Not Claimed'}."
+        startup_source_unavailable = connector_statuses.get("STARTUP_INDIA") == "UNAVAILABLE"
+
+        if startup_source_unavailable and startup_reg:
+            # Bidder claims registration but we can't verify
+            startup_outcome = EvaluationOutcome.INDETERMINATE
+            startup_details = (
+                f"Bidder claims Startup India registration (DIPP: {dipp_no or 'not provided'}) "
+                f"but STARTUP_INDIA source is UNAVAILABLE for verification."
+            )
+            startup_follow_up = "Manually verify DPIIT certificate at startupindia.gov.in."
+            startup_source_status = "unavailable"
+        elif startup_reg and dipp_no:
+            startup_outcome = EvaluationOutcome.PASS
+            startup_details = f"Startup India (DPIIT) recognized (No: {dipp_no}). NSIC: {'Enrolled' if nsic_reg else 'Not Claimed'}."
+            startup_follow_up = None
+            startup_source_status = "synthetic_demo"
+        elif startup_reg:
+            startup_outcome = EvaluationOutcome.WARNING
+            startup_details = "Startup India registration claimed but DIPP recognition number not provided."
+            startup_follow_up = "Request DPIIT certificate copy for verification."
+            startup_source_status = "synthetic_demo"
+        else:
+            # Standard bidder — this requirement is NOT_APPLICABLE, not PASS
+            startup_outcome = EvaluationOutcome.NOT_APPLICABLE
+            startup_details = (
+                f"Standard enterprise — Startup India (DPIIT) not claimed. "
+                f"NSIC: {'Enrolled' if nsic_reg else 'Not Claimed'}. "
+                f"No exemptions apply under this requirement."
+            )
+            startup_follow_up = None
+            startup_source_status = "not_applicable"
+
         results.append(
             EvaluationResult(
                 requirement_id="REQ-STR-01",
                 name="Startup India & NSIC Recognition",
                 category="Statutory",
                 citation="Public Procurement Policy for MSEs & Startup India Order 2016",
-                outcome=EvaluationOutcome.PASS,
+                outcome=startup_outcome,
                 severity=RequirementSeverity.TECHNICAL,
-                details=details,
-                evidence=[{"startup": startup_reg, "dipp_no": dipp_no, "nsic": nsic_reg}],
+                details=startup_details,
+                evidence=[{"startup": startup_reg, "dipp_no": dipp_no, "nsic": nsic_reg, "source_mode": "SYNTHETIC_DEMO"}],
                 evidence_ids=[f"EVID-STARTUP-{bidder.get('bidder_id')}"],
-                source_status="verified",
+                source_status=startup_source_status,
                 rule_version=self.policy_version,
-                suggested_officer_follow_up=None,
+                suggested_officer_follow_up=startup_follow_up,
             )
         )
 

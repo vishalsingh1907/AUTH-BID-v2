@@ -10,6 +10,7 @@ ignore = ["E501"]
 "backend/tests/*" = ["E402", "F401"]
 
 [tool.pytest.ini_options]
+pythonpath = ["backend"]
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
 filterwarnings = [
