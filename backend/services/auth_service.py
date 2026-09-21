@@ -6,23 +6,30 @@ Roles are stored in the database; clients cannot self-assign roles.
 from datetime import datetime, timedelta
 from typing import Optional
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 
 # ═══════════════════════════════════════════════════════════════
-# PASSWORD UTILITIES
+# PASSWORD UTILITIES (using direct bcrypt, avoiding passlib 72-byte bug)
 # ═══════════════════════════════════════════════════════════════
 def hash_password(plain: str) -> str:
-    return pwd_context.hash(plain)
+    """Hash password using bcrypt directly. Truncates to 72 bytes per bcrypt standard."""
+    plain_bytes = plain.encode("utf-8")[:72]
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(plain_bytes, salt).decode("utf-8")
 
 
 def verify_password(plain: str, hashed: str) -> bool:
-    return pwd_context.verify(plain, hashed)
+    """Verify plain password against bcrypt hash."""
+    try:
+        plain_bytes = plain.encode("utf-8")[:72]
+        hashed_bytes = hashed.encode("utf-8")
+        return bcrypt.checkpw(plain_bytes, hashed_bytes)
+    except Exception:
+        return False
 
 
 # ═══════════════════════════════════════════════════════════════

@@ -129,7 +129,8 @@ def require_roles(allowed_roles: List[UserRole]):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=(
-                    f"Forbidden: Action requires role in {valid_names}. "
+                    f"Forbidden: Action restricted under GFR 2017 & GeM policy. "
+                    f"Requires role in {valid_names}. "
                     f"Your authenticated role is '{role.value}'."
                 ),
             )
