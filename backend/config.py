@@ -2,8 +2,8 @@
 SIH26100 — Backend Configuration
 Loads environment variables with sensible defaults for development.
 """
-from pydantic_settings import BaseSettings
-from typing import List
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import List, Dict
 
 
 class Settings(BaseSettings):
@@ -11,10 +11,12 @@ class Settings(BaseSettings):
     APP_NAME: str = "AuthBid — GeM Compliance Intelligence"
     APP_VERSION: str = "1.0.0"
     DEBUG: bool = True
+    DEMO_MODE: bool = True  # Production flag; indicates synthetic/sandbox data adapters
 
-    # ── LLM ──
+    # ── LLM & RAG ──
     GEMINI_API_KEY: str = ""
     LLM_MODEL: str = "gemini-2.5-flash"
+    EMBEDDING_MODEL: str = "models/gemini-embedding-001"
 
     # ── PostgreSQL ──
     POSTGRES_USER: str = "bidverify"
@@ -52,10 +54,60 @@ class Settings(BaseSettings):
     # ── CORS ──
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000"]
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        extra = "ignore"
+    # ── Capability Matrix ──
+    CAPABILITY_MATRIX: Dict[str, Dict[str, str]] = {
+        "gst_connector": {
+            "source": "GSTN / NIC",
+            "status": "synthetic_demo",
+            "description": "Simulated GST registration, status, and 12-month return filing check",
+        },
+        "pan_connector": {
+            "source": "CBDT / NSDL Protean",
+            "status": "synthetic_demo",
+            "description": "Simulated PAN status and Levenshtein name match",
+        },
+        "mca_connector": {
+            "source": "MCA21 / Ministry of Corporate Affairs",
+            "status": "synthetic_demo",
+            "description": "Simulated CIN, incorporation date, and DIN director registry",
+        },
+        "udyam_connector": {
+            "source": "Ministry of MSME",
+            "status": "synthetic_demo",
+            "description": "Simulated Udyam registration and GFR 153 exemption evaluation",
+        },
+        "blacklist_connector": {
+            "source": "CPPP / GeM Debarment Database",
+            "status": "synthetic_demo",
+            "description": "Simulated debarment check under GFR 151",
+        },
+        "epfo_connector": {
+            "source": "EPFO Portal",
+            "status": "unavailable",
+            "description": "Statutory EPFO verification planned for Phase 2",
+        },
+        "esic_connector": {
+            "source": "ESIC Portal",
+            "status": "unavailable",
+            "description": "Statutory ESIC verification planned for Phase 2",
+        },
+        "startup_india_connector": {
+            "source": "DPIIT",
+            "status": "unavailable",
+            "description": "Startup India recognition planned for Phase 2",
+        },
+        "digilocker_connector": {
+            "source": "NeGD / DigiLocker",
+            "status": "unavailable",
+            "description": "Consent-based document issuer verification planned for Phase 3",
+        },
+    }
+
+    model_config = SettingsConfigDict(
+        env_file=(".env", "../.env"),
+        env_file_encoding="utf-8",
+        extra="ignore"
+    )
 
 
 INSECURE_SECRET_KEYS = {

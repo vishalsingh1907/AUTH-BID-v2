@@ -8,10 +8,23 @@ import {
   Sparkles,
   Scale,
   Shield,
-  Loader2
+  Loader2,
+  FileText,
+  ExternalLink,
+  Network,
 } from "lucide-react";
 
 import { api } from "../lib/api";
+
+interface DocumentCitation {
+  doc_id?: string;
+  file_name: string;
+  page: number;
+  bidder_id?: string;
+  score: number;
+  snippet: string;
+  view_url?: string;
+}
 
 interface CopilotResponseData {
   title: string;
@@ -20,6 +33,9 @@ interface CopilotResponseData {
   legal_statute: string;
   recommendation: string;
   disclaimer?: string;
+  is_chat?: boolean;
+  citations?: DocumentCitation[];
+  graph_citations?: string[];
 }
 
 interface Message {
@@ -35,6 +51,7 @@ interface CopilotDrawerProps {
   selectedBidderId?: string;
   isOpen?: boolean;
   onClose?: () => void;
+  onOpen?: () => void;
 }
 
 const PRESET_QUERIES = [
@@ -42,6 +59,9 @@ const PRESET_QUERIES = [
   { label: "🏢 Shell Company B007", query: "Why is Quantum Digital (B007) flagged as a shell company?" },
   { label: "🤝 Collusion Ring 2", query: "What are the ties between B005 and B009 in Ring 2?" },
   { label: "💰 L1 Evaluation", query: "Who is the lowest compliant bidder (L1) and recommended awardee?" },
+  { label: "🛡️ AuthBid Features", query: "What features does AuthBid use to detect collusion and verify bidders in this tender?" },
+  { label: "⚠️ B004 MSME Issue", query: "Explain the compliance issue with B004 GreenTech Peripherals" },
+  { label: "🔍 B006 PAN Discrepancy", query: "What anomaly was detected for B006 and what is the recommendation?" },
   { label: "⚖️ GFR 175 Legal Grounds", query: "What are the legal grounds to disqualify cartels under GFR Rule 175?" },
 ];
 
@@ -50,17 +70,20 @@ export default function CopilotDrawer({
   selectedBidderId,
   isOpen: controlledIsOpen,
   onClose,
+  onOpen,
 }: CopilotDrawerProps) {
   const [internalIsOpen, setInternalIsOpen] = useState(false);
-  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : internalIsOpen;
+  const isControlled = controlledIsOpen !== undefined;
+  const isOpen = isControlled ? controlledIsOpen : internalIsOpen;
 
   const handleClose = () => {
     if (onClose) onClose();
-    setInternalIsOpen(false);
+    if (!isControlled) setInternalIsOpen(false);
   };
 
   const handleOpen = () => {
-    setInternalIsOpen(true);
+    if (onOpen) onOpen();
+    if (!isControlled) setInternalIsOpen(true);
   };
 
   const [inputQuery, setInputQuery] = useState("");
@@ -132,11 +155,11 @@ export default function CopilotDrawer({
 
     try {
       const json = await api.queryCopilot(textToSend, tenderId, selectedBidderId);
-      if (json.success && json.data) {
+      if (json) {
         const copilotMsg: Message = {
           id: `cop-${Date.now()}`,
           sender: "copilot",
-          data: json.data,
+          data: json,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         };
         saveMessages([...updatedWithUser, copilotMsg]);
@@ -304,6 +327,71 @@ export default function CopilotDrawer({
                           <p className="text-[11px] leading-snug font-medium">
                             {m.data.recommendation}
                           </p>
+                        </div>
+                      )}
+
+                      {/* Vector RAG Document Citations */}
+                      {m.data.citations && m.data.citations.length > 0 && (
+                        <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg space-y-2">
+                          <div className="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                            <span className="flex items-center gap-1.5">
+                              <FileText size={13} className="text-blue-600" />
+                              Vector Evidence Citations (Qdrant HNSW):
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-400">
+                              {m.data.citations.length} sources
+                            </span>
+                          </div>
+                          <div className="space-y-1.5">
+                            {m.data.citations.map((c, i) => (
+                              <div
+                                key={i}
+                                className="p-2 bg-white rounded border border-slate-200 text-[11px] space-y-1"
+                              >
+                                <div className="flex items-center justify-between font-semibold text-slate-800">
+                                  <span className="truncate max-w-[230px] text-blue-700 flex items-center gap-1">
+                                    📄 {c.file_name} (p.{c.page})
+                                  </span>
+                                  <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="text-[10px] font-mono px-1.5 py-0.2 bg-blue-50 text-blue-700 rounded border border-blue-200">
+                                      Score: {c.score}
+                                    </span>
+                                    {c.view_url && (
+                                      <a
+                                        href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${c.view_url}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-blue-600 hover:text-blue-800 flex items-center gap-0.5 text-[10px] font-bold"
+                                      >
+                                        <ExternalLink size={10} /> View
+                                      </a>
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-slate-600 text-[10.5px] italic line-clamp-2">
+                                  &ldquo;{c.snippet}&rdquo;
+                                </p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Knowledge Graph Citations (Neo4j Multi-Entity Resolution) */}
+                      {m.data.graph_citations && m.data.graph_citations.length > 0 && (
+                        <div className="p-2.5 bg-indigo-50/60 border border-indigo-200 rounded-lg space-y-1.5 text-indigo-950">
+                          <div className="flex items-center gap-1.5 text-[11px] font-bold text-indigo-900">
+                            <Network size={13} className="text-indigo-600" />
+                            <span>Knowledge Graph Evidence (Neo4j Multi-Hop):</span>
+                          </div>
+                          <ul className="space-y-1">
+                            {m.data.graph_citations.map((g, i) => (
+                              <li key={i} className="text-[11px] flex items-start gap-1.5 text-indigo-900 leading-snug">
+                                <span className="text-indigo-500 font-bold">•</span>
+                                <span>{g}</span>
+                              </li>
+                            ))}
+                          </ul>
                         </div>
                       )}
                     </div>

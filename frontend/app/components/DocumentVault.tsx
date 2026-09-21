@@ -12,7 +12,11 @@ import {
   XCircle,
   Hash,
   Eye,
-  Loader2
+  Loader2,
+  Download,
+  ExternalLink,
+  UploadCloud,
+  Plus,
 } from "lucide-react";
 import { api } from "../lib/api";
 
@@ -23,6 +27,10 @@ interface ExtractedDoc {
   status: "verified" | "flagged" | "not_applicable";
   ocr_match_score: number;
   sha256_hash: string;
+  file_size_bytes?: number;
+  has_pdf?: boolean;
+  download_url?: string;
+  view_url?: string;
   extracted_data: Record<string, unknown>;
 }
 
@@ -35,6 +43,91 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
   const [loading, setLoading] = useState(true);
   const [copiedHash, setCopiedHash] = useState<string | null>(null);
   const [selectedDoc, setSelectedDoc] = useState<ExtractedDoc | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 15 * 1024 * 1024) {
+      alert("File size exceeds 15 MB limit.");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadMessage("Scanning file signature & executing PyMuPDF / Gemini OCR extraction...");
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const base64Content = (reader.result as string).split(",")[1];
+          const payload = {
+            file_name: file.name,
+            content_base64: base64Content,
+            content_type: file.type || "application/pdf",
+            doc_type: file.name.toUpperCase().includes("GST")
+              ? "GST_REG06"
+              : file.name.toUpperCase().includes("PAN")
+              ? "PAN_CARD"
+              : file.name.toUpperCase().includes("UDYAM") || file.name.toUpperCase().includes("MSME")
+              ? "UDYAM_CERT"
+              : file.name.toUpperCase().includes("OEM") || file.name.toUpperCase().includes("MAF")
+              ? "OEM_AUTH"
+              : file.name.toUpperCase().includes("AUDIT") || file.name.toUpperCase().includes("BALANCE")
+              ? "BALANCE_SHEET"
+              : "GENERIC_DOC",
+          };
+
+          const apiBase = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+          const res = await fetch(`${apiBase}/api/verification/documents/${bidderId}/upload`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Upload failed");
+          }
+
+          const resData = await res.json();
+          const docData = resData.data.document;
+          const extData = resData.data.extraction;
+          const valData = resData.data.validation;
+
+          const newDoc: ExtractedDoc = {
+            doc_id: docData.doc_id,
+            doc_name: `${payload.doc_type} (${file.name})`,
+            verification_source: "Live Ingestion & Registry Cross-Check",
+            status: valData.status === "verified" ? "verified" : "flagged",
+            ocr_match_score: extData.ocr_match_score || 95.0,
+            sha256_hash: docData.sha256_hash,
+            view_url: docData.view_url,
+            download_url: docData.download_url,
+            extracted_data: Object.fromEntries(
+              Object.entries(extData.fields || {}).map(([k, v]: [string, any]) => [k, v.value])
+            ),
+          };
+
+          setDocuments((prev) => [newDoc, ...prev]);
+          setUploadMessage(`Successfully verified and ingested '${file.name}' into Qdrant Vector DB!`);
+          setTimeout(() => setUploadMessage(null), 5000);
+        } catch (err: any) {
+          alert(`Document upload & verification failed: ${err.message}`);
+        } finally {
+          setIsUploading(false);
+          if (fileInputRef.current) fileInputRef.current.value = "";
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (err: any) {
+      alert(`Error reading file: ${err.message}`);
+      setIsUploading(false);
+    }
+  };
 
   useEffect(() => {
     if (!bidderId) return;
@@ -44,9 +137,9 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
 
     api
       .getBidderDocuments(bidderId)
-      .then((res) => {
-        if (isMounted && res.success) {
-          setDocuments(res.data.documents || []);
+      .then((docs) => {
+        if (isMounted && docs) {
+          setDocuments(docs as unknown as ExtractedDoc[]);
         }
       })
       .catch((err) => {
@@ -108,7 +201,32 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept=".pdf,.png,.jpg,.jpeg"
+            className="hidden"
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isUploading}
+            className="text-xs font-semibold px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-1.5 shadow-xs transition disabled:opacity-50 cursor-pointer"
+          >
+            {isUploading ? (
+              <>
+                <Loader2 size={13} className="animate-spin" />
+                <span>Processing OCR...</span>
+              </>
+            ) : (
+              <>
+                <UploadCloud size={13} />
+                <span>Upload & Verify Document</span>
+              </>
+            )}
+          </button>
           <span className="text-xs font-semibold px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg flex items-center gap-1.5">
             <CheckCircle2 size={13} />
             {documents.filter((d) => d.status === "verified").length} / {documents.length} Verified
@@ -121,6 +239,14 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
           )}
         </div>
       </div>
+
+      {/* Upload Notification Banner */}
+      {uploadMessage && (
+        <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-xl text-xs font-semibold animate-fade-in">
+          {isUploading && <Loader2 size={14} className="animate-spin text-blue-600" />}
+          <span>{uploadMessage}</span>
+        </div>
+      )}
 
       {/* Grid of Verified Documents */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -200,15 +326,29 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
                   </div>
                 </div>
 
-                {/* Checksum Badge */}
+                {/* Checksum Badge & View Actions */}
                 <div className="flex items-center justify-between pt-1 mb-2">
                   <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full flex items-center gap-1">
                     <ShieldCheck size={11} className="text-emerald-600" />
                     SHA-256 Verified
                   </span>
-                  <span className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1">
-                    <Eye size={12} /> Preview
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {doc.view_url && (
+                      <a
+                        href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${doc.view_url}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="text-[11px] font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                        title="View authentic PDF in new tab"
+                      >
+                        <ExternalLink size={12} /> PDF
+                      </a>
+                    )}
+                    <span className="text-[11px] font-semibold text-slate-600 hover:text-slate-800 flex items-center gap-1">
+                      <Eye size={12} /> Preview
+                    </span>
+                  </div>
                 </div>
 
                 {/* Extracted Fields Summary */}
@@ -259,7 +399,7 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
       {/* Document Detailed Preview Modal */}
       {selectedDoc && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
@@ -279,13 +419,38 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
               </div>
               <button
                 onClick={() => setSelectedDoc(null)}
-                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200"
+                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200 cursor-pointer"
               >
                 ✕
               </button>
             </div>
 
             <div className="p-6 overflow-y-auto space-y-4">
+              {/* Authentic PDF Viewer Preview if available */}
+              {selectedDoc.view_url && (
+                <div className="border border-slate-300 rounded-xl overflow-hidden shadow-xs bg-slate-900">
+                  <div className="bg-slate-800 px-4 py-2 flex items-center justify-between text-xs text-slate-200 border-b border-slate-700">
+                    <span className="font-semibold flex items-center gap-1.5">
+                      <FileText size={14} className="text-blue-400" />
+                      Official PDF Document Preview (PyMuPDF / Gemini Extracted)
+                    </span>
+                    <a
+                      href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${selectedDoc.view_url}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] text-blue-300 hover:text-white flex items-center gap-1 font-mono"
+                    >
+                      <ExternalLink size={12} /> Open Fullscreen
+                    </a>
+                  </div>
+                  <iframe
+                    src={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${selectedDoc.view_url}#toolbar=0&navpanes=0`}
+                    className="w-full h-80 bg-white"
+                    title="Official PDF Preview"
+                  />
+                </div>
+              )}
+
               {/* Realistic Government Certificate Sheet Preview */}
               <div className="border-2 border-slate-300 rounded-xl p-5 bg-gradient-to-b from-slate-50/70 to-white relative overflow-hidden shadow-xs">
                 {/* Diagonal Demo Watermark */}
@@ -375,12 +540,35 @@ export default function DocumentVault({ bidderId }: DocumentVaultProps) {
               <span className="text-[11px] text-slate-500">
                 🔒 Validated against official GeM compliance criteria
               </span>
-              <button
-                onClick={() => setSelectedDoc(null)}
-                className="px-4 py-1.5 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg transition"
-              >
-                Close Preview
-              </button>
+              <div className="flex items-center gap-2">
+                {selectedDoc.view_url && (
+                  <a
+                    href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${selectedDoc.view_url}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-3 py-1.5 text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 hover:bg-blue-100 rounded-lg transition flex items-center gap-1.5"
+                  >
+                    <ExternalLink size={13} />
+                    Open PDF
+                  </a>
+                )}
+                {selectedDoc.download_url && (
+                  <a
+                    href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}${selectedDoc.download_url}`}
+                    download
+                    className="px-3 py-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 hover:bg-emerald-100 rounded-lg transition flex items-center gap-1.5"
+                  >
+                    <Download size={13} />
+                    Download
+                  </a>
+                )}
+                <button
+                  onClick={() => setSelectedDoc(null)}
+                  className="px-4 py-1.5 text-xs font-bold text-slate-700 bg-white border border-slate-300 hover:bg-slate-100 rounded-lg transition cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

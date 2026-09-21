@@ -39,9 +39,9 @@ app = FastAPI(
     title=settings.APP_NAME,
     version=settings.APP_VERSION,
     description=(
-        "AI-Powered Integrated Bid Compliance Verification Platform for GeM Procurement. "
-        "OSINT-style bidder intelligence system with entity resolution, cross-bidder "
-        "collusion detection, and hash-chained audit trail."
+        "Officer-Supervised Tender Compliance and Bidder Risk Assessment Platform for GeM Procurement. "
+        "Combines deterministic statutory validation, structured evidence provenance, cross-bidder "
+        "relationship analysis, explainable risk scoring, and model-assisted evidence review."
     ),
     lifespan=lifespan,
 )
@@ -73,8 +73,10 @@ async def root():
         "app": settings.APP_NAME,
         "version": settings.APP_VERSION,
         "status": "operational",
+        "demo_mode": settings.DEMO_MODE,
         "endpoints": {
             "docs": "/docs",
+            "capabilities": "/api/capabilities",
             "tenders": "/api/tenders",
             "bidders": "/api/bidders",
             "verification": "/api/verification",
@@ -92,4 +94,17 @@ async def root():
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "version": settings.APP_VERSION}
+    return {"status": "healthy", "version": settings.APP_VERSION, "demo_mode": settings.DEMO_MODE}
+
+
+@app.get("/api/capabilities")
+async def get_capabilities():
+    """Return the platform capability matrix and connector readiness."""
+    return {
+        "success": True,
+        "data": {
+            "environment": settings.ENVIRONMENT,
+            "demo_mode": settings.DEMO_MODE,
+            "connectors": settings.CAPABILITY_MATRIX,
+        },
+    }

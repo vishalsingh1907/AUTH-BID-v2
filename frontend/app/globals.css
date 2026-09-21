@@ -52,13 +52,11 @@
   --status-amber-border: #fde68a;
   --status-amber-text: #92400e;
 
-  /* Elevation Shadows */
+  /* Elevation Shadows — Refined & Subtle */
   --shadow-xs: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
-  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.06), 0 1px 2px -1px rgba(15, 23, 42, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.05);
-  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.04);
-  --shadow-blue-glow: 0 8px 24px -4px rgba(37, 99, 235, 0.16);
-  --shadow-red-glow: 0 8px 24px -4px rgba(220, 38, 38, 0.16);
+  --shadow-sm: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.05), 0 2px 4px -2px rgba(15, 23, 42, 0.03);
+  --shadow-lg: 0 10px 15px -3px rgba(15, 23, 42, 0.06), 0 4px 6px -4px rgba(15, 23, 42, 0.03);
 }
 
 /* ── Base ── */
@@ -73,81 +71,71 @@ body {
 .gov-card {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-main);
-  border-radius: 16px;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 12px;
+  box-shadow: var(--shadow-xs);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .gov-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1.5px);
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
 }
 
 .gov-card-static {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-main);
-  border-radius: 16px;
-  box-shadow: var(--shadow-sm);
+  border-radius: 12px;
+  box-shadow: var(--shadow-xs);
 }
 
 .gov-card-interactive {
   background-color: var(--bg-surface);
   border: 1px solid var(--border-main);
-  border-radius: 16px;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s ease;
+  border-radius: 12px;
+  box-shadow: var(--shadow-xs);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
   cursor: pointer;
 }
 
 .gov-card-interactive:hover {
-  border-color: var(--brand-blue-border);
-  background-color: #fafbfc;
-  box-shadow: var(--shadow-blue-glow);
-  transform: translateY(-2px);
+  border-color: #93c5fd;
+  box-shadow: var(--shadow-sm);
 }
 
-/* ── Risk Badges (White, Blue, Green, Red) ── */
+/* ── Risk Badges (Sleek, Restrained, No Pulsing) ── */
 .risk-badge {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  border-radius: 9999px;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 6px;
   font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .risk-badge.risk-low {
-  background-color: var(--status-green-light);
-  color: var(--status-green-text);
-  border: 1px solid var(--status-green-border);
+  background-color: #f0fdf4;
+  color: #166534;
+  border: 1px solid #bbf7d0;
 }
 
 .risk-badge.risk-medium {
-  background-color: var(--status-amber-light);
-  color: var(--status-amber-text);
-  border: 1px solid var(--status-amber-border);
+  background-color: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fde68a;
 }
 
 .risk-badge.risk-high {
-  background-color: var(--status-red-light);
-  color: var(--status-red-text);
-  border: 1px solid var(--status-red-border);
+  background-color: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
 }
 
 .risk-badge.risk-critical {
   background-color: #fef2f2;
   color: #991b1b;
-  border: 1px solid #f87171;
-  animation: pulse-critical 2s infinite ease-in-out;
-}
-
-@keyframes pulse-critical {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.25); }
-  50% { box-shadow: 0 0 0 6px rgba(220, 38, 38, 0); }
+  border: 1px solid #fca5a5;
 }
 
 /* ── Pill Tags ── */

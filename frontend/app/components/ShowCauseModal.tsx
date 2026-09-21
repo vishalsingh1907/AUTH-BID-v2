@@ -59,8 +59,8 @@ export default function ShowCauseModal({
     api
       .getShowCauseNotice(bidderId)
       .then((res) => {
-        if (isMounted && res.success) {
-          setData(res.data);
+        if (isMounted && res) {
+          setData(res);
         }
       })
       .catch((err) => {

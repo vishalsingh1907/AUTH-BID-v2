@@ -222,6 +222,7 @@ class VerificationResult(BaseModel):
     compliance_checks: list[ComplianceCheck] = Field(default_factory=list)
     anomalies: list[AnomalyFlag] = Field(default_factory=list)
     hard_eligibility: dict = Field(default_factory=dict)
+    system_recommendation: Optional[str] = None
     ai_recommendation: Optional[str] = None
     ai_confidence: Optional[float] = None
     evidence_chain: list[dict] = Field(default_factory=list)

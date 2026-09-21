@@ -27,6 +27,9 @@ ENV/
 # Database / Persistent Volumes
 pgdata/
 neo4jdata/
+*.db
+*.sqlite
+*.sqlite3
 
 # Environment & Secrets
 .env

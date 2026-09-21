@@ -524,63 +524,79 @@ The dataset (seeded with `random.seed(42)` for full reproducibility) plants two 
 ## 17. Project File & Folder Structure
 
 ```
-AuthBid-main/
-├── README.md                          — Quick start & architecture overview
-├── FEATURES.md                        — Full functionality & architecture reference
-├── CONTRIBUTING.md                    — Contributor setup & QA guide
-├── LICENSE
-├── pyproject.toml                     — Ruff lint configuration
-├── docker-compose.yml                 — Local development stack
+sih 2/ (AuthBid Workspace)
+├── README.md                          — GitHub landing page & quickstart
+├── AuthBid_Project_Documentation.md   — Complete technical and functional reference
+├── LICENSE                            — Open-source license (Apache 2.0)
+├── pyproject.toml                     — Python tool configuration (Ruff linting)
+├── docker-compose.yml                 — Local development stack (FastAPI + Next.js + DBs)
 ├── docker-compose.prod.yml            — Production stack (multi-worker, restart policies)
-├── docs/
-│   ├── AUDIT_ANCHORING.md             — Cryptographic anchoring architecture
-│   └── REGULATORY_INTEGRATION_ROADMAP.md — Path to live statutory API integration
+├── .env.example                       — Example environment configuration
+├── assets/                            — Official AuthBid branding, logos, and favicons
 ├── backend/
-│   ├── main.py                        — FastAPI app entrypoint
-│   ├── config.py                      — Settings + startup security validation
-│   ├── requirements.txt
-│   ├── Dockerfile
+│   ├── main.py                        — FastAPI app entrypoint & router registration
+│   ├── config.py                      — Pydantic settings & startup security validation
+│   ├── requirements.txt               — Python backend dependencies
+│   ├── Dockerfile                     — Backend container image specification
 │   ├── models/
-│   │   ├── schemas.py                 — Pydantic domain schemas
-│   │   ├── database.py                — In-memory stores + hash-chain logic
-│   │   └── auth.py                    — RBAC roles & dependencies
+│   │   ├── schemas.py                 — Canonical Pydantic v2 domain schemas
+│   │   ├── database.py                — In-memory state, demo reset, and hash-chain ledger
+│   │   └── auth.py                    — RBAC roles, dependencies, and token verification
 │   ├── routers/
-│   │   ├── tenders.py
-│   │   ├── bidders.py
-│   │   ├── verification.py            — Core pipeline, risk scoring, copilot, audit
-│   │   └── graph.py                   — Entity resolution & collusion graph
+│   │   ├── tenders.py                 — Tender intake, checklist, and metadata routes
+│   │   ├── bidders.py                 — Bidder profile and verification lookup routes
+│   │   ├── verification.py            — Core verification pipeline, risk scoring, copilot, audit
+│   │   └── graph.py                   — Entity resolution & cross-bidder collusion graph
 │   ├── mock_apis/
-│   │   ├── synthetic_data.py          — 12-bidder demo dataset generator
-│   │   ├── gst_api.py
-│   │   ├── pan_api.py
-│   │   ├── mca_api.py
-│   │   ├── udyam_api.py
-│   │   └── blacklist_api.py
+│   │   ├── synthetic_data.py          — 12-bidder canonical synthetic dataset generator
+│   │   ├── gst_api.py                 — Simulated GST Portal (GSTN) verification
+│   │   ├── pan_api.py                 — Simulated CBDT/NSDL PAN name matching
+│   │   ├── mca_api.py                 — Simulated MCA21 CIN/DIN director lookup
+│   │   ├── udyam_api.py               — Simulated Udyam/MSME registration verification
+│   │   └── blacklist_api.py           — Simulated CPPP/GeM debarment registry
 │   └── tests/
-│       ├── conftest.py
-│       ├── test_collusion_rules.py
-│       ├── test_config_validation.py
-│       ├── test_hash_chain.py
-│       ├── test_pipeline_integration.py
-│       ├── test_rbac_and_anchoring.py
-│       └── test_risk_scoring.py
+│       ├── conftest.py                — Pytest fixtures and test client setup
+│       ├── test_api_contracts.py      — API contracts & tender workflow tests
+│       ├── test_collusion_rules.py    — Entity-resolution & anomaly detection tests
+│       ├── test_config_validation.py  — Production security configuration tests
+│       ├── test_hash_chain.py         — SHA-256 ledger & tamper-detection tests
+│       ├── test_pipeline_integration.py — Full 8-stage verification pipeline test
+│       ├── test_rbac_and_anchoring.py — RBAC permissions & Merkle anchoring tests
+│       └── test_risk_scoring.py       — 5-component weighted risk formula tests
 └── frontend/
-    ├── package.json
-    ├── Dockerfile
-    ├── next.config.ts
-    ├── tsconfig.json
+    ├── package.json                   — Next.js dependencies & scripts
+    ├── tsconfig.json                  — TypeScript compiler options
+    ├── postcss.config.mjs             — Tailwind CSS PostCSS configuration
+    ├── eslint.config.mjs              — ESLint configuration
+    ├── next.config.ts                 — Next.js configuration
+    ├── Dockerfile                     — Frontend container image specification
+    ├── public/                        — Static web assets & icons
     └── app/
-        ├── page.tsx                   — Main dashboard (all 6 views)
-        ├── layout.tsx
-        ├── globals.css
+        ├── page.tsx                   — Workspace coordinator & view navigation
+        ├── layout.tsx                 — Root application layout
+        ├── globals.css                — Calm 2026 enterprise design tokens & styles
         ├── lib/
-        │   └── api.ts                 — Typed API client
+        │   ├── api.ts                 — Typed API client with error handling
+        │   ├── formatters.ts          — INR currency, dates, and hash formatters
+        │   ├── risk.ts                — Semantic risk score tokens & color helpers
+        │   ├── types.ts               — Canonical TypeScript domain interfaces
+        │   └── utils.ts               — Class name merging utilities
         └── components/
-            ├── BidderCompareModal.tsx
-            ├── CommercialPriceAnalysis.tsx
-            ├── CopilotDrawer.tsx
-            ├── DocumentVault.tsx
-            └── ShowCauseModal.tsx
+            ├── app-shell/             — Application header and navigation sidebar
+            ├── tender/                — Tender intake metadata banner
+            ├── pipeline/              — 8-stage verification pipeline runner
+            ├── triage/                — Priority-ordered review queue & filter bar
+            ├── dossier/               — Deep-dive investigation dossier
+            ├── graph/                 — Level-of-Detail collusion graph & evidence panel
+            ├── audit/                 — SHA-256 block ledger & tamper simulator
+            ├── report/                — Formal GFR 151 evaluation committee report
+            ├── modals/                — Adjudication and decision modals
+            ├── ui/                    — Reusable accessible UI primitives (Badge, Button, Card)
+            ├── BidderCompareModal.tsx — Multi-bidder side-by-side comparison modal
+            ├── CommercialPriceAnalysis.tsx — L1 outlier & pricing band analysis
+            ├── CopilotDrawer.tsx      — AI-assisted legal & vigilance copilot
+            ├── DocumentVault.tsx      — Checksum-verified statutory document viewer
+            └── ShowCauseModal.tsx     — Formal GFR 151 Show-Cause Notice generator
 ```
 
 ---
@@ -711,4 +727,4 @@ AuthBid demonstrates a technically rigorous, legally-grounded approach to one of
 
 ---
 
-*Document compiled from the full AuthBid-main source repository, covering the backend (FastAPI/Python), frontend (Next.js/React/TypeScript), test suite, Docker deployment configuration, and accompanying architecture documentation (`README.md`, `FEATURES.md`, `docs/AUDIT_ANCHORING.md`, `docs/REGULATORY_INTEGRATION_ROADMAP.md`, `CONTRIBUTING.md`).*
+*Document compiled from the full AuthBid source repository, covering the backend (FastAPI/Python), frontend (Next.js/React/TypeScript), test suite, Docker deployment configuration, and the official project specification.*

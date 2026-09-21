@@ -96,3 +96,29 @@ def test_risk_level_thresholds():
     r_med = _calculate_risk_score(checks, anom_4, bidder)
     assert r_med["overall_score"] == 25.0
     assert r_med["risk_level"] == "medium"
+
+
+def test_explainable_risk_metadata_and_eligibility():
+    """Verify Phase 6 explainability fields: version, eligibility separation, data completeness."""
+    # Statutory failure -> Potential non-compliance
+    checks_fail = [
+        {"check_name": "GST Registration", "result": "fail", "category": "GST"},
+        {"check_name": "PAN Verification", "result": "pass", "category": "PAN"},
+    ]
+    bidder = {"annual_turnover": [{"year": "FY24", "amount": 1000}]}
+    r_fail = _calculate_risk_score(checks_fail, [], bidder)
+    assert r_fail["scoring_policy_version"] == "v2.1-sih26100"
+    assert r_fail["eligibility_status"] == "Potential non-compliance"
+    assert "Check GST Registration: FAIL" in r_fail["contributing_factors"]
+    assert "cross_source_consistency" in r_fail["weight_justifications"]
+
+    # Indeterminate source -> Indeterminate — source unavailable
+    checks_ind = [
+        {"check_name": "EPFO Registration", "result": "indeterminate", "category": "EPFO"},
+        {"check_name": "PAN Verification", "result": "pass", "category": "PAN"},
+    ]
+    r_ind = _calculate_risk_score(checks_ind, [], bidder)
+    assert r_ind["eligibility_status"] == "Indeterminate — source unavailable"
+    assert r_ind["data_completeness"] == 50.0
+    assert r_ind["uncertainty_level"] == "high"
+

@@ -7,7 +7,7 @@ services:
     container_name: sih_postgres_prod
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-bidverify}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bidverify_secret_2026}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?FATAL: POSTGRES_PASSWORD must be provided for production}
       POSTGRES_DB: ${POSTGRES_DB:-bid_compliance}
     expose:
       - "5432"
@@ -25,7 +25,7 @@ services:
     image: neo4j:5-community
     container_name: sih_neo4j_prod
     environment:
-      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:-neo4j_secret_2026}
+      NEO4J_AUTH: ${NEO4J_USER:-neo4j}/${NEO4J_PASSWORD:?FATAL: NEO4J_PASSWORD must be provided for production}
       NEO4J_PLUGINS: '["apoc"]'
     expose:
       - "7474"

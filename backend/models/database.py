@@ -181,6 +181,74 @@ def get_pipeline_status(tender_id: str, bidder_id: str) -> Optional[dict]:
 
 
 # ═══════════════════════════════════════════════════════════════
+# DURABLE VERIFICATION RUNS (Phase 8)
+# ═══════════════════════════════════════════════════════════════
+_runs_store: dict[str, dict] = {}
+
+
+def create_verification_run(
+    tender_id: str,
+    initiating_user: str = "officer",
+    policy_version: str = "v2.1-sih26100",
+    total_bidders: int = 0,
+) -> dict:
+    run_id = f"RUN-{tender_id.replace('/', '-')}-{int(datetime.now().timestamp())}"
+    run = {
+        "run_id": run_id,
+        "tender_id": tender_id,
+        "initiating_user": initiating_user,
+        "status": "created",  # created, queued, running, partially_completed, completed, failed, cancelled, retried, stale
+        "policy_version": policy_version,
+        "connector_versions": {
+            "gst_connector": "v1.0",
+            "pan_connector": "v1.0",
+            "mca_connector": "v1.0",
+            "udyam_connector": "v1.0",
+            "blacklist_connector": "v1.0",
+        },
+        "model_versions": {
+            "evidence_review": "gemini-2.5-flash / rule_fallback_v1",
+            "ocr_extractor": "v1.0",
+        },
+        "started_at": datetime.now().isoformat(),
+        "completed_at": None,
+        "total_bidders": total_bidders,
+        "verified_bidders": 0,
+        "per_source_status": {
+            "GST": "pending",
+            "PAN": "pending",
+            "MCA": "pending",
+            "UDYAM": "pending",
+            "BLACKLIST": "pending",
+        },
+        "per_bidder_status": {},
+        "retry_count": 0,
+        "error_details": None,
+        "last_checkpoint": "INITIALIZED",
+    }
+    _runs_store[run_id] = run
+    return run
+
+
+def update_verification_run(run_id: str, updates: dict) -> Optional[dict]:
+    run = _runs_store.get(run_id)
+    if not run:
+        return None
+    run.update(updates)
+    return run
+
+
+def get_verification_run(run_id: str) -> Optional[dict]:
+    return _runs_store.get(run_id)
+
+
+def list_verification_runs(tender_id: Optional[str] = None) -> list[dict]:
+    if tender_id:
+        return [r for r in _runs_store.values() if r.get("tender_id") == tender_id]
+    return list(_runs_store.values())
+
+
+# ═══════════════════════════════════════════════════════════════
 # OFFICER DECISIONS & AUDIT LOG
 # ═══════════════════════════════════════════════════════════════
 def record_officer_decision(tender_id: str, decision_data: dict) -> dict:
@@ -213,4 +281,34 @@ def get_latest_anchor_receipt() -> Optional[dict]:
 def get_all_anchor_receipts() -> list[dict]:
     """Retrieve all external anchor receipts."""
     return list(_anchor_receipts)
+
+
+# ═══════════════════════════════════════════════════════════════
+# DEMO RESET & INITIALIZATION
+# ═══════════════════════════════════════════════════════════════
+def reset_demo_data() -> dict:
+    """
+    Reset in-memory state back to deterministic starting demo scenario.
+    Clears results, decisions, audit entries, anchor receipts, and re-seeds SAMPLE_TENDER.
+    """
+    global _tenders_store, _verification_results, _audit_trail, _pipeline_status, _decisions_store, _anchor_receipts, _original_audit_backup, _runs_store
+    from mock_apis.synthetic_data import SAMPLE_TENDER
+
+    _tenders_store.clear()
+    _verification_results.clear()
+    _audit_trail.clear()
+    _pipeline_status.clear()
+    _decisions_store.clear()
+    _anchor_receipts.clear()
+    _original_audit_backup.clear()
+    _runs_store.clear()
+
+    # Re-seed sample tender
+    store_tender(dict(SAMPLE_TENDER))
+
+    return {
+        "status": "reset_complete",
+        "tender_id": SAMPLE_TENDER["tender_id"],
+        "timestamp": datetime.now().isoformat(),
+    }
 

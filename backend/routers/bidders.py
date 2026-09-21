@@ -70,7 +70,7 @@ async def get_bidder_detail(bidder_id: str):
     }
 
 
-@router.get("/{bidder_id}/verification/{tender_id}")
+@router.get("/{bidder_id}/verification/{tender_id:path}")
 async def get_bidder_verification(bidder_id: str, tender_id: str):
     """Get verification results for a bidder in a specific tender."""
     result = get_verification_result(bidder_id, tender_id)

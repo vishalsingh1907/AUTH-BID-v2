@@ -10,8 +10,8 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "AuthBid — GeM Compliance Intelligence",
   description:
-    "AI-Powered Integrated Bid Compliance Verification Platform for GeM Procurement. OSINT-style entity resolution, cross-bidder collusion detection, and hash-chained audit trails.",
-  keywords: ["GeM", "Bid Verification", "Compliance", "AI", "Government Procurement", "SIH"],
+    "Officer-Supervised Tender Compliance and Bidder Risk Assessment Platform for GeM Procurement. Combines deterministic statutory validation, structured evidence provenance, cross-bidder relationship analysis, explainable risk scoring, and model-assisted evidence review.",
+  keywords: ["GeM", "Bid Verification", "Compliance", "Tender Integrity", "Government Procurement", "SIH26100"],
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },

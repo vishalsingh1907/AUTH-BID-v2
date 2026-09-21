@@ -9,12 +9,6 @@ from mock_apis.synthetic_data import SAMPLE_TENDER, get_all_bidders
 router = APIRouter(prefix="/api/tenders", tags=["Tenders"])
 
 
-@router.on_event("startup")
-async def seed_sample_tender():
-    """Seed the sample tender on startup."""
-    store_tender(SAMPLE_TENDER)
-
-
 @router.get("")
 @router.get("/")
 async def list_tenders():

@@ -637,6 +637,24 @@ def _build_bidders() -> list[dict]:
         },
     ]
 
+    for b in bidders:
+        b_id = b["bidder_id"]
+        if "esic_registered" not in b:
+            b["esic_registered"] = False if b_id in ["B004", "B007"] else True
+            b["esic_establishment_code"] = None if b_id in ["B004", "B007"] else f"1100{b_id[1:]}12340001001"
+        if "startup_india_registered" not in b:
+            b["startup_india_registered"] = True if b_id in ["B004", "B010"] else False
+            b["dipp_recognition_no"] = f"DIPP-{b_id}-99421" if b_id in ["B004", "B010"] else None
+        if "nsic_registered" not in b:
+            b["nsic_registered"] = True if b_id in ["B010"] else False
+            b["nsic_certificate_no"] = f"NSIC/GP/{b_id}/2023" if b_id in ["B010"] else None
+        if "itr_filed_last_3_years" not in b:
+            b["itr_filed_last_3_years"] = False if b_id == "B007" else True
+        if "digilocker_verified" not in b:
+            b["digilocker_verified"] = False if b_id == "B007" else True
+
+    return bidders
+
 
 # Build on import
 SYNTHETIC_BIDDERS = _build_bidders()

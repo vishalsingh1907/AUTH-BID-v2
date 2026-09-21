@@ -390,10 +390,102 @@ def _build_cross_bidder_graph(bidders: list[dict]) -> dict:
                     "size": len(cluster_members),
                     "risk_level": "critical",
                     "shared_indicators": shared_indicators,
-                    "description": f"Potential bid-rigging ring: {', '.join(member_names)}",
+                    "description": f"Potential relationship cluster ({', '.join(shared_indicators)}) between {', '.join(member_names)}",
                 })
 
-    return {"nodes": nodes, "edges": edges, "clusters": clusters}
+    # Build accessible tabular relationship view
+    table_view = []
+    bidder_name_map = {b["bidder_id"]: b["entity_name"] for b in bidders}
+    rel_counter = 1
+
+    for key, bids in director_to_bidders.items():
+        if len(bids) > 1:
+            for i in range(len(bids)):
+                for j in range(i + 1, len(bids)):
+                    table_view.append({
+                        "relationship_id": f"REL-{rel_counter:04d}",
+                        "bidder_a_id": bids[i],
+                        "bidder_a_name": bidder_name_map.get(bids[i], bids[i]),
+                        "bidder_b_id": bids[j],
+                        "bidder_b_name": bidder_name_map.get(bids[j], bids[j]),
+                        "indicator_type": "shared_director",
+                        "shared_value": f"DIN/PAN: {key}",
+                        "confidence": 1.0,
+                        "source": "MCA21 / PAN Registry",
+                    })
+                    rel_counter += 1
+
+    for key, bids in address_to_bidders.items():
+        if len(bids) > 1:
+            addr_obj = json.loads(key)
+            addr_str = f"{addr_obj.get('line1', '')}, {addr_obj.get('city', '')} ({addr_obj.get('pincode', '')})"
+            for i in range(len(bids)):
+                for j in range(i + 1, len(bids)):
+                    table_view.append({
+                        "relationship_id": f"REL-{rel_counter:04d}",
+                        "bidder_a_id": bids[i],
+                        "bidder_a_name": bidder_name_map.get(bids[i], bids[i]),
+                        "bidder_b_id": bids[j],
+                        "bidder_b_name": bidder_name_map.get(bids[j], bids[j]),
+                        "indicator_type": "shared_address",
+                        "shared_value": addr_str,
+                        "confidence": 1.0,
+                        "source": "Registered Address Registry",
+                    })
+                    rel_counter += 1
+
+    for key, bids in bank_to_bidders.items():
+        if len(bids) > 1:
+            for i in range(len(bids)):
+                for j in range(i + 1, len(bids)):
+                    table_view.append({
+                        "relationship_id": f"REL-{rel_counter:04d}",
+                        "bidder_a_id": bids[i],
+                        "bidder_a_name": bidder_name_map.get(bids[i], bids[i]),
+                        "bidder_b_id": bids[j],
+                        "bidder_b_name": bidder_name_map.get(bids[j], bids[j]),
+                        "indicator_type": "shared_bank_branch",
+                        "shared_value": f"IFSC: {key}",
+                        "confidence": 0.95,
+                        "source": "Bank Verification Gateway",
+                    })
+                    rel_counter += 1
+
+    for phone, bids in phone_to_bidders.items():
+        if len(bids) > 1:
+            for i in range(len(bids)):
+                for j in range(i + 1, len(bids)):
+                    table_view.append({
+                        "relationship_id": f"REL-{rel_counter:04d}",
+                        "bidder_a_id": bids[i],
+                        "bidder_a_name": bidder_name_map.get(bids[i], bids[i]),
+                        "bidder_b_id": bids[j],
+                        "bidder_b_name": bidder_name_map.get(bids[j], bids[j]),
+                        "indicator_type": "shared_phone",
+                        "shared_value": f"Phone: {phone[:3]}****{phone[-3:]}",
+                        "confidence": 0.98,
+                        "source": "Bidder Contact Registry",
+                    })
+                    rel_counter += 1
+
+    for email, bids in email_to_bidders.items():
+        if len(bids) > 1:
+            for i in range(len(bids)):
+                for j in range(i + 1, len(bids)):
+                    table_view.append({
+                        "relationship_id": f"REL-{rel_counter:04d}",
+                        "bidder_a_id": bids[i],
+                        "bidder_a_name": bidder_name_map.get(bids[i], bids[i]),
+                        "bidder_b_id": bids[j],
+                        "bidder_b_name": bidder_name_map.get(bids[j], bids[j]),
+                        "indicator_type": "shared_email",
+                        "shared_value": email,
+                        "confidence": 0.98,
+                        "source": "Bidder Contact Registry",
+                    })
+                    rel_counter += 1
+
+    return {"nodes": nodes, "edges": edges, "clusters": clusters, "relationship_table": table_view}
 
 
 @router.get("/bidder/{bidder_id}")
@@ -408,27 +500,70 @@ async def get_bidder_graph(bidder_id: str):
 
 
 @router.get("/collusion/{tender_id:path}")
-async def get_collusion_graph(tender_id: str):
+async def get_collusion_graph(tender_id: str, bidder_id: str = None, cluster_id: str = None):
     """
-    Get the cross-bidder collusion detection graph.
-    This is the SHOWSTOPPER endpoint — returns the full network
-    with suspicious clusters highlighted.
+    Get the cross-bidder potential relationship detection graph.
+    Returns the network with potential relationship clusters highlighted.
+    Supports focused investigation filtering via bidder_id or cluster_id.
     """
     bidders = get_all_bidders()
     graph = _build_cross_bidder_graph(bidders)
+
+    nodes = graph["nodes"]
+    edges = graph["edges"]
+    clusters = graph["clusters"]
+    table = graph.get("relationship_table", [])
+
+    # Filter for focused cluster or bidder investigation if requested
+    if cluster_id:
+        target_cluster = next((c for c in clusters if c["cluster_id"] == cluster_id), None)
+        if target_cluster:
+            cluster_bidders = set(target_cluster["members"])
+            node_ids_to_keep = {f"bidder-{b}" for b in cluster_bidders}
+            # Also keep connected attribute nodes
+            for e in edges:
+                if e["source"] in node_ids_to_keep:
+                    node_ids_to_keep.add(e["target"])
+                elif e["target"] in node_ids_to_keep:
+                    node_ids_to_keep.add(e["source"])
+            nodes = [n for n in nodes if n["id"] in node_ids_to_keep]
+            edges = [e for e in edges if e["source"] in node_ids_to_keep and e["target"] in node_ids_to_keep]
+            table = [t for t in table if t["bidder_a_id"] in cluster_bidders or t["bidder_b_id"] in cluster_bidders]
+
+    elif bidder_id:
+        target_node_id = f"bidder-{bidder_id}"
+        connected_node_ids = {target_node_id}
+        for e in edges:
+            if e["source"] == target_node_id:
+                connected_node_ids.add(e["target"])
+            elif e["target"] == target_node_id:
+                connected_node_ids.add(e["source"])
+        # Also find any 2nd-hop bidders connected to those attributes
+        for e in edges:
+            if e["source"] in connected_node_ids and e["target"].startswith("bidder-"):
+                connected_node_ids.add(e["target"])
+            elif e["target"] in connected_node_ids and e["source"].startswith("bidder-"):
+                connected_node_ids.add(e["source"])
+        nodes = [n for n in nodes if n["id"] in connected_node_ids]
+        edges = [e for e in edges if e["source"] in connected_node_ids and e["target"] in connected_node_ids]
+        table = [t for t in table if t["bidder_a_id"] == bidder_id or t["bidder_b_id"] == bidder_id]
 
     return {
         "success": True,
         "data": {
             "tender_id": tender_id,
-            **graph,
+            "nodes": nodes,
+            "edges": edges,
+            "clusters": clusters,
+            "relationship_table": table,
             "analysis_summary": {
                 "total_bidders": len(bidders),
-                "total_nodes": len(graph["nodes"]),
-                "total_edges": len(graph["edges"]),
-                "suspicious_edges": sum(1 for e in graph["edges"] if e.get("is_suspicious")),
-                "collusion_clusters": len(graph["clusters"]),
-                "high_risk_bidders": sum(1 for n in graph["nodes"] if n.get("risk_level") in ["high", "critical"] and n["type"] == "bidder"),
+                "total_nodes": len(nodes),
+                "total_edges": len(edges),
+                "suspicious_edges": sum(1 for e in edges if e.get("is_suspicious")),
+                "collusion_clusters": len(clusters),
+                "high_risk_bidders": sum(1 for n in nodes if n.get("risk_level") in ["high", "critical"] and n["type"] == "bidder"),
+                "graph_engine": "neo4j_apoc" if getattr(__import__("db.neo4j_driver", fromlist=["neo4j_service"]).neo4j_service, "is_available", False) else "in_memory_bfs",
             },
         },
     }
