@@ -5,10 +5,9 @@ Roles are stored in the database and returned in the JWT.
 Clients CANNOT self-assign roles — the server reads role from DB.
 """
 from fastapi import APIRouter, HTTPException, Depends, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel, EmailStr
+from fastapi.security import OAuth2PasswordBearer
+from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from typing import Optional
 import logging
 
 from db.session import get_sync_db

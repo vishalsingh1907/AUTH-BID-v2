@@ -5,31 +5,30 @@ AI-Powered Integrated Bid Compliance Verification Platform for GeM Procurement
 Main FastAPI application entry point.
 """
 import logging
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from config import settings, validate_startup_config
-from db.session import init_db, get_sync_db, check_db_health
+from db.session import check_db_health, get_sync_db, init_db
+from mock_apis.blacklist_api import router as blacklist_router
+from mock_apis.gst_api import router as gst_router
+from mock_apis.mca_api import router as mca_router
+from mock_apis.pan_api import router as pan_router
 from mock_apis.synthetic_data import SAMPLE_TENDER
+from mock_apis.udyam_api import router as udyam_router
+from routers.auth import router as auth_router
+from routers.bidders import router as bidders_router
+from routers.graph import router as graph_router
+from routers.tenders import router as tenders_router
+from routers.verification import router as verification_router
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
-
-# ── Routers ──
-from routers.auth import router as auth_router
-from routers.tenders import router as tenders_router
-from routers.bidders import router as bidders_router
-from routers.verification import router as verification_router
-from routers.graph import router as graph_router
-from mock_apis.gst_api import router as gst_router
-from mock_apis.pan_api import router as pan_router
-from mock_apis.udyam_api import router as udyam_router
-from mock_apis.mca_api import router as mca_router
-from mock_apis.blacklist_api import router as blacklist_router
 
 
 def _seed_demo_users(db) -> None:

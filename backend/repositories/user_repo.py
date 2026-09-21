@@ -14,12 +14,12 @@ from models.orm import User, Organization
 
 def get_user_by_email(db: Session, email: str) -> Optional[User]:
     """Look up a user by email address. Returns None if not found."""
-    return db.query(User).filter(User.email == email, User.is_active == True).first()
+    return db.query(User).filter(User.email == email, User.is_active).first()
 
 
 def get_user_by_id(db: Session, user_id: str) -> Optional[User]:
     """Look up a user by primary key ID."""
-    return db.query(User).filter(User.id == user_id, User.is_active == True).first()
+    return db.query(User).filter(User.id == user_id, User.is_active).first()
 
 
 def create_user(

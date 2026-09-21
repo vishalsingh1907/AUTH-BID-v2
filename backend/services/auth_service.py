@@ -3,10 +3,8 @@ SIH26100 — Authentication Service
 Handles user creation, login, JWT token issuance, and password hashing.
 Roles are stored in the database; clients cannot self-assign roles.
 """
-import hashlib
-import os
 from datetime import datetime, timedelta
-from typing import Optional, Tuple
+from typing import Optional
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
