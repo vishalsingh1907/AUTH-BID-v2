@@ -9,10 +9,13 @@ pydantic-settings==2.8.1
 # ═══ Database ═══
 sqlalchemy[asyncio]==2.0.40
 asyncpg==0.30.0
+aiosqlite>=0.20.0
 alembic==1.15.1
 neo4j==5.28.1
+qdrant-client==1.14.2
 
 # ═══ AI / Agents ═══
+google-genai>=1.0.0
 langchain==0.3.25
 langchain-google-genai==2.1.4
 langgraph==0.4.7
@@ -22,6 +25,10 @@ langchain-community==0.3.24
 pdf2image==1.17.0
 Pillow==11.2.1
 pyzbar==0.1.9
+pymupdf>=1.24.0
+reportlab>=4.0.0
+pypdf==5.4.0
+
 
 # ═══ Task Queue ═══
 celery[redis]==5.5.2
