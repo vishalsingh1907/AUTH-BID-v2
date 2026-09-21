@@ -6,7 +6,7 @@ Clients CANNOT self-assign roles — the server reads role from DB.
 """
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import OAuth2PasswordBearer
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 import logging
 
@@ -28,7 +28,10 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
 # ═══════════════════════════════════════════════════════════════
 class LoginRequest(BaseModel):
     email: str
-    password: str
+    # max_length=72 enforces bcrypt's hard limit at the validation layer.
+    # Passwords longer than 72 bytes are silently truncated by bcrypt <4 and
+    # raise ValueError in bcrypt >=4; we reject them explicitly with a 422.
+    password: str = Field(min_length=1, max_length=72)
 
 
 class TokenResponse(BaseModel):
