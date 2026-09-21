@@ -17,7 +17,6 @@ import sys
 import json
 import hashlib
 import random
-from datetime import datetime
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -209,7 +208,7 @@ def generate_balance_sheet(bidder: dict) -> str:
     st = _get_styles()
     story = []
 
-    story.append(Paragraph(f"INDEPENDENT AUDITOR'S REPORT & FINANCIAL STATEMENTS", st["title"]))
+    story.append(Paragraph("INDEPENDENT AUDITOR'S REPORT & FINANCIAL STATEMENTS", st["title"]))
     story.append(Paragraph(f"Entity: {bidder['entity_name']}", st["subtitle"]))
     story.append(Spacer(1, 6))
     story.append(Paragraph("Statutory Audit for Financial Years 2023-24, 2024-25, 2025-26", st["subtitle"]))

@@ -46,8 +46,21 @@ class UnavailableConnector:
 
 
 # Planned connectors
-EPFOConnector = lambda: UnavailableConnector("EPFO Connector", "EPFO", "Employees' Provident Fund Organisation")
-ESICConnector = lambda: UnavailableConnector("ESIC Connector", "ESIC", "Employees' State Insurance Corporation")
-StartupIndiaConnector = lambda: UnavailableConnector("Startup India Connector", "STARTUP_INDIA", "DPIIT")
-NSICConnector = lambda: UnavailableConnector("NSIC Connector", "NSIC", "National Small Industries Corporation")
-DigiLockerConnector = lambda: UnavailableConnector("DigiLocker Verification Connector", "DIGILOCKER", "NeGD / MeitY")
+def EPFOConnector() -> UnavailableConnector:
+    return UnavailableConnector("EPFO Connector", "EPFO", "Employees' Provident Fund Organisation")
+
+
+def ESICConnector() -> UnavailableConnector:
+    return UnavailableConnector("ESIC Connector", "ESIC", "Employees' State Insurance Corporation")
+
+
+def StartupIndiaConnector() -> UnavailableConnector:
+    return UnavailableConnector("Startup India Connector", "STARTUP_INDIA", "DPIIT")
+
+
+def NSICConnector() -> UnavailableConnector:
+    return UnavailableConnector("NSIC Connector", "NSIC", "National Small Industries Corporation")
+
+
+def DigiLockerConnector() -> UnavailableConnector:
+    return UnavailableConnector("DigiLocker Verification Connector", "DIGILOCKER", "NeGD / MeitY")

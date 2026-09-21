@@ -152,7 +152,7 @@ SHARED_BANK_RING2 = {
 # ═══════════════════════════════════════════════════════════════
 def _build_bidders() -> list[dict]:
     """Build the synthetic bidders list with all collusion patterns."""
-    return [
+    bidders = [
         # ── B001: COLLUSION RING 1 (leader) ──
         {
             "bidder_id": "B001",

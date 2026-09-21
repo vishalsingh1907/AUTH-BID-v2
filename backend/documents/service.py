@@ -15,6 +15,7 @@ import re
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 from pydantic import BaseModel, Field
+from config import settings
 
 # Constants
 MAX_DOCUMENT_SIZE_BYTES = 15 * 1024 * 1024  # 15 MB
@@ -246,7 +247,7 @@ class DocumentPipelineService:
                             )
                             if vision_res and vision_res.text:
                                 raw_text = vision_res.text.strip()
-                        except Exception as ve:
+                        except Exception:
                             pass
                 doc.close()
             except Exception as e:
@@ -363,7 +364,7 @@ class DocumentPipelineService:
             )
 
         # Forensic Statutory Validation
-        from documents.forensic_validators import validate_gstin, validate_pan, validate_udin
+        from documents.forensic_validators import validate_gstin, validate_pan
 
         # Cross-check GSTIN & Validate Statutory Structure
         if "gstin" in extraction.fields and "gstin" in registry_data:

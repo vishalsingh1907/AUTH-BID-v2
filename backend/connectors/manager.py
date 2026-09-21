@@ -2,9 +2,8 @@
 SIH26100 — Registry Connector Manager
 Orchestrates registry verification requests across GSTN, PAN, MCA21, Udyam, Blacklist, and unavailable sources.
 """
-from typing import Dict, Any, List
+from typing import Dict, Any
 from connectors.base import (
-    RegistryConnector,
     VerificationRequest,
     ConnectorResult,
     ConnectorStatus,

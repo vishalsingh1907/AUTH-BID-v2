@@ -27,5 +27,4 @@ def test_index_single_document_and_retrieve():
     # Verify retrieval
     results = rag_service.retrieve("GSTIN TechVision Solutions", bidder_id="B001", top_k=2)
     assert len(results) > 0
-    doc_ids = [r["doc_id"] for r in results]
     assert any("B001" in str(r.get("bidder_id", "")) for r in results)

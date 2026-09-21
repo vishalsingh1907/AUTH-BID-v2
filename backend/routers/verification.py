@@ -36,6 +36,9 @@ import re
 import os
 import asyncio
 import base64
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/verification", tags=["Verification"])
 
@@ -557,7 +560,7 @@ async def run_verification(tender_id: str):
         raise HTTPException(status_code=404, detail=f"Tender {tender_id} not found")
 
     all_bidders = get_all_bidders()
-    
+
     # Initialize durable verification run
     run = create_verification_run(
         tender_id=tender_id,
@@ -1174,7 +1177,7 @@ def _query_gemini_copilot(raw_query: str, query: str, tender_id: str, bidder_id:
                 rag_context += "\n--- Document Evidence (Vector RAG) ---\n"
                 for c in retrieved_chunks:
                     rag_context += f"• [{c['file_name']} | Page {c['page']}]: {c['text']}\n"
-    except Exception as e:
+    except Exception:
         rag_context = ""
 
     system_instruction = _build_copilot_system_instruction(tender_id, target_bidder_id)
@@ -1217,7 +1220,7 @@ def _query_gemini_copilot(raw_query: str, query: str, tender_id: str, bidder_id:
             if isinstance(parsed, dict) and "title" in parsed and "summary" in parsed:
                 evidence_list = [str(e) for e in parsed.get("evidence", [])] if isinstance(parsed.get("evidence"), list) else []
                 is_chat = parsed.get("is_chat", False) or (len(evidence_list) == 0 and not parsed.get("legal_statute") and not parsed.get("recommendation"))
-                
+
                 citations = [
                     {
                         "doc_id": c.get("doc_id"),

@@ -8,7 +8,6 @@ from enum import Enum
 from datetime import datetime
 import hashlib
 import json
-import asyncio
 
 
 class ConnectorStatus(str, Enum):

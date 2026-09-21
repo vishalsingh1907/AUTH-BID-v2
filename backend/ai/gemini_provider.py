@@ -8,7 +8,7 @@ import hashlib
 import json
 import os
 from config import settings
-from ai.governance import ModelReviewResponse, ObservedFact, PromptSanitizer
+from ai.governance import ModelReviewResponse, ObservedFact
 
 
 class GeminiAnalysisProvider:

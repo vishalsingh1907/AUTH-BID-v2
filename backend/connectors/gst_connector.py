@@ -4,16 +4,14 @@ Connects to simulated or sandbox GST Portal (GSTN).
 Extracts active registration status, jurisdiction, and 12-month return filing history.
 """
 from typing import Dict, Any
-from datetime import datetime
 from connectors.base import (
-    RegistryConnector,
     ConnectorStatus,
     ResponseStatus,
     VerificationRequest,
     ConnectorResult,
     CircuitBreaker,
 )
-from mock_apis.synthetic_data import get_bidder_by_id, get_all_bidders
+from mock_apis.synthetic_data import get_all_bidders
 
 
 class GSTConnector:

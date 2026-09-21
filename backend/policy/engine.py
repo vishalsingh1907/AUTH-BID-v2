@@ -7,7 +7,6 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import difflib
 from policy.models import (
-    PolicyRequirement,
     EvaluationResult,
     EvaluationOutcome,
     RequirementSeverity,
@@ -156,7 +155,7 @@ class PolicyEvaluationEngine:
             follow_up = "Seek certified audited balance sheets."
         elif is_mse:
             outcome = EvaluationOutcome.PASS
-            details = f"MSE Exemption applied under GFR Rule 153. Minimum turnover relaxed."
+            details = "MSE Exemption applied under GFR Rule 153. Minimum turnover relaxed."
             follow_up = None
         else:
             avg_turnover = sum(t.get("amount", 0) for t in turnovers) / max(len(turnovers), 1)

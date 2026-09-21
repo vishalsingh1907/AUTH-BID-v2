@@ -7,7 +7,7 @@ Implements authentic algorithmic validation for:
 4. DIN (8-digit MCA Director Identification Number)
 """
 import re
-from typing import Dict, Any, List, Optional, Tuple
+from typing import Dict, Any, Optional
 
 # Official Indian State / UT GST Codes
 VALID_GST_STATE_CODES = {

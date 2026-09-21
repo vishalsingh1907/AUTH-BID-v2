@@ -2,10 +2,9 @@
 SIH26100 — Database Session & Engine Configuration
 Supports PostgreSQL via SQLAlchemy 2.0 with automatic SQLite fallback for local demo/testing without external Docker.
 """
-from typing import AsyncGenerator, Generator
+from typing import Generator
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from config import settings
 from models.orm import Base
 import os

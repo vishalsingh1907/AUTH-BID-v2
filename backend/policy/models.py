@@ -3,7 +3,7 @@ SIH26100 — Policy Engine Data Models
 Defines PolicyRequirement, EvaluationResult, and PolicyDefinition.
 Supports deterministic statutory and tender-specific requirement evaluation.
 """
-from typing import Optional, List, Dict, Any, Callable
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
 from enum import Enum
 from datetime import datetime

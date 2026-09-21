@@ -5,12 +5,9 @@ Enforces strict boundaries:
 - Models assist by summarizing evidence, explaining relationships, and suggesting follow-up
 - All responses adhere to structured JSON contracts with source evidence citations
 """
-from typing import List, Dict, Any, Optional, Protocol
+from typing import List, Dict, Any, Protocol
 from pydantic import BaseModel, Field
-from datetime import datetime
 import re
-import hashlib
-import json
 
 
 class ObservedFact(BaseModel):

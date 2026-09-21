@@ -19,9 +19,7 @@ from sqlalchemy import (
     DateTime,
     Text,
     ForeignKey,
-    Index,
     JSON,
-    Enum as SQLEnum,
 )
 from sqlalchemy.orm import (
     DeclarativeBase,
